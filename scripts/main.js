@@ -339,6 +339,12 @@ const Hub = {
                 return ChecklistApp.init(containerId);
             case 'reading-list':
                 return ReadingListApp.init(containerId);
+            case 'planner':
+                return PlannerApp.init(containerId);
+            case 'recipes':
+                return RecipeApp.init(containerId);
+            case 'goals':
+                return GoalTrackerApp.init(containerId);
             case 'notes':
                 return NotesApp.init(containerId);
             case 'calendar':
@@ -357,6 +363,10 @@ const Hub = {
                 return PixelArtApp.init(containerId);
             case 'logodesign':
                 return LogoApp.init(containerId);
+            case 'photo-edit':
+                return PhotoEditApp.init(containerId);
+            case 'collage':
+                return CollageApp.init(containerId);
             case 'quiz':
                 return QuizApp.init(containerId);
             case 'flashcards':
@@ -365,6 +375,8 @@ const Hub = {
                 return TypingApp.init(containerId);
             case 'math':
                 return MathApp.init(containerId);
+            case 'vocab':
+                return VocabApp.init(containerId);
             case 'calculator':
                 return CalculatorApp.init(containerId);
             case 'converter':
@@ -389,10 +401,20 @@ const Hub = {
                 return VideoPlayerApp.init(containerId);
             case 'mini-browser':
                 return MiniBrowserApp.init(containerId);
+            case 'markdown':
+                return MarkdownApp.init(containerId);
+            case 'file-manager':
+                return FileManagerApp.init(containerId);
             case 'minesweeper':
                 return MinesweeperApp.init(containerId);
             case 'hangman':
                 return HangmanApp.init(containerId);
+            case 'memory':
+                return MemoryApp.init(containerId);
+            case 'rps':
+                return RPSApp.init(containerId);
+            case 'analytics':
+                return AnalyticsApp.init(containerId);
             case 'games':
                 return GamesApp.init(containerId);
             case 'settings':
