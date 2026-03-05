@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate All-in-One HTML Hub</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/theme.css">
+    <link rel="stylesheet" href="styles/app-windows.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="light-theme">
+    <div id="desktop">
+        <aside id="sidebar">
+            <div class="sidebar-header">
+                <h2>HTML Hub</h2>
+            </div>
+            <nav id="sidebar-nav">
+                <div class="nav-group">
+                    <h3>Productivity</h3>
+                    <ul>
+                        <li data-app="todo"><i class="fas fa-check-square"></i> To-Do List</li>
+                        <li data-app="notes"><i class="fas fa-sticky-note"></i> Notes</li>
+                        <li data-app="calendar"><i class="fas fa-calendar-alt"></i> Calendar</li>
+                        <li data-app="finance"><i class="fas fa-wallet"></i> Finance</li>
+                    </ul>
+                </div>
+                <div class="nav-group">
+                    <h3>Creativity</h3>
+                    <ul>
+                        <li data-app="sketchpad"><i class="fas fa-paint-brush"></i> Sketchpad</li>
+                        <li data-app="meme-gen"><i class="fas fa-laugh"></i> Meme Maker</li>
+                    </ul>
+                </div>
+                <div class="nav-group">
+                    <h3>Education</h3>
+                    <ul>
+                        <li data-app="quiz"><i class="fas fa-question-circle"></i> Quiz</li>
+                        <li data-app="flashcards"><i class="fas fa-clone"></i> Flashcards</li>
+                    </ul>
+                </div>
+                <div class="nav-group">
+                    <h3>Games</h3>
+                    <ul>
+                        <li data-app="games"><i class="fas fa-gamepad"></i> Games Hub</li>
+                    </ul>
+                </div>
+                <div class="nav-group">
+                    <h3>Media</h3>
+                    <ul>
+                        <li data-app="audio-player"><i class="fas fa-music"></i> Audio</li>
+                        <li data-app="video-player"><i class="fas fa-video"></i> Video</li>
+                    </ul>
+                </div>
+                <div class="nav-group">
+                    <h3>Tools</h3>
+                    <ul>
+                        <li data-app="calculator"><i class="fas fa-calculator"></i> Calculator</li>
+                        <li data-app="mini-browser"><i class="fas fa-globe"></i> Browser</li>
+                    </ul>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="theme-toggle"><i class="fas fa-moon"></i></button>
+                <button id="settings-btn"><i class="fas fa-cog"></i></button>
+            </div>
+        </aside>
+
+        <main id="workspace">
+            <!-- App windows will be injected here -->
+            <div id="home-dashboard">
+                <h1>Welcome Back</h1>
+                <div class="quick-access">
+                    <!-- Quick access tiles -->
+                </div>
+            </div>
+        </main>
+
+        <footer id="taskbar">
+            <div id="start-menu-btn"><i class="fab fa-windows"></i></div>
+            <div id="running-apps"></div>
+            <div id="system-tray">
+                <span id="clock">00:00:00</span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="scripts/utils.js"></script>
+    <script src="scripts/storage.js"></script>
+    <script src="scripts/apps/todo.js"></script>
+    <script src="scripts/apps/notes.js"></script>
+    <script src="scripts/apps/calendar.js"></script>
+    <script src="scripts/apps/finance.js"></script>
+    <script src="scripts/apps/sketchpad.js"></script>
+    <script src="scripts/apps/meme-gen.js"></script>
+    <script src="scripts/apps/quiz.js"></script>
+    <script src="scripts/apps/flashcards.js"></script>
+    <script src="scripts/apps/calculator.js"></script>
+    <script src="scripts/apps/audio-player.js"></script>
+    <script src="scripts/apps/video-player.js"></script>
+    <script src="scripts/apps/mini-browser.js"></script>
+    <script src="scripts/apps/games.js"></script>
+    <script src="scripts/main.js"></script>
+</body>
+</html>
