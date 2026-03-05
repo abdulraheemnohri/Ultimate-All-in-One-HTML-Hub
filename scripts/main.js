@@ -18,6 +18,7 @@ const Hub = {
         setInterval(() => this.updateClock(), 1000);
         this.setupEventListeners();
         this.registerServiceWorker();
+        this.populateDashboard();
         console.log("Hub Initialized");
     },
 
@@ -52,12 +53,63 @@ const Hub = {
         const settingsBtn = document.getElementById('settings-btn');
         settingsBtn.addEventListener('click', () => this.openApp('settings'));
 
+        // Sidebar Search
+        const searchInput = document.getElementById('app-search');
+        searchInput.addEventListener('input', (e) => this.filterApps(e.target.value));
+
+        // Keyboard Shortcuts
+        window.addEventListener('keydown', (e) => this.handleKeyboard(e));
+
         // Load saved theme
         const savedTheme = Storage.load('theme');
         if (savedTheme === 'dark') {
             document.body.classList.replace('light-theme', 'dark-theme');
             document.querySelector('#theme-toggle i').classList.replace('fa-moon', 'fa-sun');
         }
+
+        // Load saved wallpaper
+        const savedWallpaper = Storage.load('wallpaper');
+        if (savedWallpaper) {
+            this.setWallpaper(savedWallpaper);
+        }
+    },
+
+    setWallpaper(wp) {
+        const workspace = document.getElementById('workspace');
+        if (wp.startsWith('http') || wp.startsWith('data:')) {
+            workspace.style.backgroundImage = `url('${wp}')`;
+            workspace.style.backgroundColor = '';
+        } else {
+            workspace.style.backgroundImage = 'none';
+            workspace.style.background = wp;
+        }
+        Storage.save('wallpaper', wp);
+    },
+
+    populateDashboard() {
+        const container = document.querySelector('.quick-access');
+        if (!container) return;
+        container.innerHTML = '';
+
+        const apps = [
+            { id: 'todo', icon: 'fa-check-square', color: '#4caf50' },
+            { id: 'notes', icon: 'fa-sticky-note', color: '#ffeb3b' },
+            { id: 'calendar', icon: 'fa-calendar-alt', color: '#2196f3' },
+            { id: 'games', icon: 'fa-gamepad', color: '#f44336' },
+            { id: 'sketchpad', icon: 'fa-paint-brush', color: '#9c27b0' },
+            { id: 'calculator', icon: 'fa-calculator', color: '#607d8b' }
+        ];
+
+        apps.forEach(app => {
+            const tile = document.createElement('div');
+            tile.className = 'dashboard-tile';
+            tile.innerHTML = `
+                <i class="fas ${app.icon}" style="color: ${app.color}"></i>
+                <span>${this.getAppName(app.id)}</span>
+            `;
+            tile.onclick = () => this.openApp(app.id);
+            container.appendChild(tile);
+        });
     },
 
     updateClock() {
@@ -65,6 +117,53 @@ const Hub = {
         const clockEl = document.getElementById('clock');
         if (clockEl) {
             clockEl.textContent = now.toLocaleTimeString();
+        }
+    },
+
+    filterApps(query) {
+        query = query.toLowerCase();
+        document.querySelectorAll('#sidebar-nav li').forEach(item => {
+            const text = item.textContent.toLowerCase();
+            const group = item.closest('.nav-group');
+            if (text.includes(query)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        // Hide groups if empty
+        document.querySelectorAll('.nav-group').forEach(group => {
+            const visibleItems = group.querySelectorAll('li[style="display: block;"]').length;
+            const allItems = group.querySelectorAll('li').length;
+            // If query is empty, show all
+            if (!query) {
+                group.style.display = 'block';
+                group.querySelectorAll('li').forEach(li => li.style.display = 'block');
+            } else {
+                group.style.display = visibleItems > 0 ? 'block' : 'none';
+            }
+        });
+    },
+
+    handleKeyboard(e) {
+        // Alt + S to search
+        if (e.altKey && e.key === 's') {
+            e.preventDefault();
+            document.getElementById('app-search').focus();
+        }
+
+        // Alt + Q to close active window
+        if (e.altKey && e.key === 'q') {
+            if (this.activeWindow) {
+                const winId = this.activeWindow.id;
+                this.closeWindow(winId);
+            }
+        }
+
+        // Alt + M to toggle theme
+        if (e.altKey && e.key === 't') {
+            this.toggleTheme();
         }
     },
 
@@ -232,6 +331,14 @@ const Hub = {
         switch(appId) {
             case 'todo':
                 return TodoApp.init(containerId);
+            case 'pomodoro':
+                return PomodoroApp.init(containerId);
+            case 'habits':
+                return HabitTrackerApp.init(containerId);
+            case 'checklist':
+                return ChecklistApp.init(containerId);
+            case 'reading-list':
+                return ReadingListApp.init(containerId);
             case 'notes':
                 return NotesApp.init(containerId);
             case 'calendar':
@@ -242,18 +349,50 @@ const Hub = {
                 return SketchpadApp.init(containerId);
             case 'meme-gen':
                 return MemeApp.init(containerId);
+            case 'palette':
+                return PaletteApp.init(containerId);
+            case 'typography':
+                return TypographyApp.init(containerId);
+            case 'pixelart':
+                return PixelArtApp.init(containerId);
+            case 'logodesign':
+                return LogoApp.init(containerId);
             case 'quiz':
                 return QuizApp.init(containerId);
             case 'flashcards':
                 return FlashcardsApp.init(containerId);
+            case 'typing':
+                return TypingApp.init(containerId);
+            case 'math':
+                return MathApp.init(containerId);
             case 'calculator':
                 return CalculatorApp.init(containerId);
+            case 'converter':
+                return ConverterApp.init(containerId);
+            case 'qrcode':
+                return QRCodeApp.init(containerId);
+            case 'text-utils':
+                return TextUtilsApp.init(containerId);
+            case 'pass-gen':
+                return PassGenApp.init(containerId);
+            case 'timezone':
+                return TimezoneApp.init(containerId);
+            case 'lorem':
+                return LoremApp.init(containerId);
+            case 'voice-rec':
+                return VoiceRecApp.init(containerId);
+            case 'soundboard':
+                return SoundboardApp.init(containerId);
             case 'audio-player':
                 return AudioPlayerApp.init(containerId);
             case 'video-player':
                 return VideoPlayerApp.init(containerId);
             case 'mini-browser':
                 return MiniBrowserApp.init(containerId);
+            case 'minesweeper':
+                return MinesweeperApp.init(containerId);
+            case 'hangman':
+                return HangmanApp.init(containerId);
             case 'games':
                 return GamesApp.init(containerId);
             case 'settings':
@@ -269,6 +408,21 @@ const Hub = {
         container.innerHTML = `
             <div class="settings-app">
                 <section>
+                    <h3>Personalization</h3>
+                    <p>Wallpaper URL or Color/Gradient</p>
+                    <div class="wallpaper-input">
+                        <input type="text" id="wp-url" placeholder="Enter Unsplash URL or color (e.g. #333 or linear-gradient(...))">
+                        <button onclick="Hub.applyWallpaper()">Apply</button>
+                    </div>
+                    <div class="preset-wallpapers">
+                        <div class="wp-preset" style="background: #2c3e50" onclick="Hub.setWallpaper('#2c3e50')"></div>
+                        <div class="wp-preset" style="background: linear-gradient(45deg, #8e44ad, #3498db)" onclick="Hub.setWallpaper('linear-gradient(45deg, #8e44ad, #3498db)')"></div>
+                        <div class="wp-preset" style="background: linear-gradient(45deg, #16a085, #f1c40f)" onclick="Hub.setWallpaper('linear-gradient(45deg, #16a085, #f1c40f)')"></div>
+                        <div class="wp-preset" style="background: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=100&q=60'); background-size: cover;" onclick="Hub.setWallpaper('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1350&q=80')"></div>
+                    </div>
+                </section>
+
+                <section style="margin-top: 20px;">
                     <h3>Data Management</h3>
                     <p>Backup or restore all your hub data.</p>
                     <div class="button-group">
@@ -284,14 +438,17 @@ const Hub = {
                 </section>
                 <section style="margin-top: 20px;">
                     <h3>About</h3>
-                    <p>Ultimate All-in-One HTML Hub v1.0</p>
+                    <p>Ultimate All-in-One HTML Hub v1.1</p>
                 </section>
             </div>
             <style>
                 .settings-app h3 { margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
-                .settings-app .button-group { display: flex; gap: 10px; margin-top: 10px; }
+                .settings-app .button-group, .settings-app .wallpaper-input { display: flex; gap: 10px; margin-top: 10px; }
+                .settings-app input { flex-grow: 1; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color); }
                 .settings-app button { padding: 8px 15px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; }
                 .settings-app button.danger { background: #ff5f56; margin-top: 10px; }
+                .preset-wallpapers { display: flex; gap: 10px; margin-top: 10px; }
+                .wp-preset { width: 40px; height: 40px; border-radius: 4px; cursor: pointer; border: 1px solid var(--border-color); }
             </style>
         `;
 
@@ -330,6 +487,11 @@ const Hub = {
         }
     },
 
+    applyWallpaper() {
+        const url = document.getElementById('wp-url').value;
+        if (url) this.setWallpaper(url);
+    },
+
     clearAllData() {
         if (confirm('Are you sure you want to clear ALL data? This cannot be undone.')) {
             Storage.clearAll();
@@ -356,8 +518,16 @@ const Hub = {
                 pos2 = pos4 - e.clientY;
                 pos3 = e.clientX;
                 pos4 = e.clientY;
-                winEl.style.top = (winEl.offsetTop - pos2) + "px";
-                winEl.style.left = (winEl.offsetLeft - pos1) + "px";
+
+                let newTop = winEl.offsetTop - pos2;
+                let newLeft = winEl.offsetLeft - pos1;
+
+                // Edge Snapping (Simple)
+                if (newTop < 10) newTop = 0;
+                if (newLeft < 10) newLeft = 0;
+
+                winEl.style.top = newTop + "px";
+                winEl.style.left = newLeft + "px";
                 winEl.style.transition = 'none';
             };
 
@@ -365,6 +535,14 @@ const Hub = {
                 document.onmousemove = null;
                 document.onmouseup = null;
                 winEl.style.transition = '';
+
+                // Snapping to screen edges
+                const rect = winEl.getBoundingClientRect();
+                const workspace = document.getElementById('workspace').getBoundingClientRect();
+
+                if (rect.top < 0) winEl.style.top = '0px';
+                if (rect.left < 0) winEl.style.left = '0px';
+                if (rect.right > workspace.right) winEl.style.left = (workspace.width - rect.width) + 'px';
             };
         };
 

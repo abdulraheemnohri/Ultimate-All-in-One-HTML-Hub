@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ultimate All-in-One HTML Hub</title>
     <link rel="stylesheet" href="styles/main.css">
-    <link rel="stylesheet" href="styles/theme.css">
     <link rel="stylesheet" href="styles/app-windows.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -14,15 +13,23 @@
         <aside id="sidebar">
             <div class="sidebar-header">
                 <h2>HTML Hub</h2>
+                <div class="sidebar-search">
+                    <input type="text" id="app-search" placeholder="Search apps...">
+                    <i class="fas fa-search"></i>
+                </div>
             </div>
             <nav id="sidebar-nav">
                 <div class="nav-group">
                     <h3>Productivity</h3>
                     <ul>
                         <li data-app="todo"><i class="fas fa-check-square"></i> To-Do List</li>
+                        <li data-app="habits"><i class="fas fa-calendar-check"></i> Habit Tracker</li>
+                        <li data-app="pomodoro"><i class="fas fa-stopwatch"></i> Pomodoro</li>
                         <li data-app="notes"><i class="fas fa-sticky-note"></i> Notes</li>
                         <li data-app="calendar"><i class="fas fa-calendar-alt"></i> Calendar</li>
                         <li data-app="finance"><i class="fas fa-wallet"></i> Finance</li>
+                        <li data-app="checklist"><i class="fas fa-shopping-cart"></i> Shopping List</li>
+                        <li data-app="reading-list"><i class="fas fa-book"></i> Reading List</li>
                     </ul>
                 </div>
                 <div class="nav-group">
@@ -30,6 +37,10 @@
                     <ul>
                         <li data-app="sketchpad"><i class="fas fa-paint-brush"></i> Sketchpad</li>
                         <li data-app="meme-gen"><i class="fas fa-laugh"></i> Meme Maker</li>
+                        <li data-app="palette"><i class="fas fa-palette"></i> Palette Gen</li>
+                        <li data-app="typography"><i class="fas fa-font"></i> Typography</li>
+                        <li data-app="pixelart"><i class="fas fa-th"></i> Pixel Art</li>
+                        <li data-app="logodesign"><i class="fas fa-shapes"></i> Logo Design</li>
                     </ul>
                 </div>
                 <div class="nav-group">
@@ -37,12 +48,16 @@
                     <ul>
                         <li data-app="quiz"><i class="fas fa-question-circle"></i> Quiz</li>
                         <li data-app="flashcards"><i class="fas fa-clone"></i> Flashcards</li>
+                        <li data-app="typing"><i class="fas fa-keyboard"></i> Typing Trainer</li>
+                        <li data-app="math"><i class="fas fa-plus-minus"></i> Math Practice</li>
                     </ul>
                 </div>
                 <div class="nav-group">
                     <h3>Games</h3>
                     <ul>
                         <li data-app="games"><i class="fas fa-gamepad"></i> Games Hub</li>
+                        <li data-app="minesweeper"><i class="fas fa-bomb"></i> Minesweeper</li>
+                        <li data-app="hangman"><i class="fas fa-ghost"></i> Hangman</li>
                     </ul>
                 </div>
                 <div class="nav-group">
@@ -50,12 +65,20 @@
                     <ul>
                         <li data-app="audio-player"><i class="fas fa-music"></i> Audio</li>
                         <li data-app="video-player"><i class="fas fa-video"></i> Video</li>
+                        <li data-app="soundboard"><i class="fas fa-volume-up"></i> Soundboard</li>
                     </ul>
                 </div>
                 <div class="nav-group">
                     <h3>Tools</h3>
                     <ul>
                         <li data-app="calculator"><i class="fas fa-calculator"></i> Calculator</li>
+                        <li data-app="converter"><i class="fas fa-exchange-alt"></i> Converter</li>
+                        <li data-app="qrcode"><i class="fas fa-qrcode"></i> QR Generator</li>
+                        <li data-app="text-utils"><i class="fas fa-file-alt"></i> Text Tools</li>
+                        <li data-app="pass-gen"><i class="fas fa-key"></i> Pass Gen</li>
+                        <li data-app="timezone"><i class="fas fa-clock"></i> World Clock</li>
+                        <li data-app="lorem"><i class="fas fa-paragraph"></i> Lorem Ipsum</li>
+                        <li data-app="voice-rec"><i class="fas fa-microphone"></i> Voice Rec</li>
                         <li data-app="mini-browser"><i class="fas fa-globe"></i> Browser</li>
                     </ul>
                 </div>
@@ -100,6 +123,26 @@
     <script src="scripts/apps/video-player.js"></script>
     <script src="scripts/apps/mini-browser.js"></script>
     <script src="scripts/apps/games.js"></script>
+    <script src="scripts/apps/pomodoro.js"></script>
+    <script src="scripts/apps/habits.js"></script>
+    <script src="scripts/apps/checklist.js"></script>
+    <script src="scripts/apps/books.js"></script>
+    <script src="scripts/apps/pixelart.js"></script>
+    <script src="scripts/apps/logodesign.js"></script>
+    <script src="scripts/apps/typing.js"></script>
+    <script src="scripts/apps/math.js"></script>
+    <script src="scripts/apps/minesweeper.js"></script>
+    <script src="scripts/apps/hangman.js"></script>
+    <script src="scripts/apps/soundboard.js"></script>
+    <script src="scripts/apps/timezone.js"></script>
+    <script src="scripts/apps/lorem.js"></script>
+    <script src="scripts/apps/voicerec.js"></script>
+    <script src="scripts/apps/converter.js"></script>
+    <script src="scripts/apps/qrcode.js"></script>
+    <script src="scripts/apps/palette.js"></script>
+    <script src="scripts/apps/typography.js"></script>
+    <script src="scripts/apps/textutils.js"></script>
+    <script src="scripts/apps/passgen.js"></script>
     <script src="scripts/main.js"></script>
 </body>
 </html>
