@@ -10,6 +10,13 @@
     --mesh-gradient: radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%),
                      radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%),
                      radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+
+    /* Fluid Design Tokens */
+    --font-size-base: clamp(0.875rem, 0.2vw + 0.8rem, 1.125rem);
+    --font-size-h1: clamp(1.5rem, 4vw + 1rem, 3.5rem);
+    --font-size-h2: clamp(1.25rem, 2vw + 1rem, 2.25rem);
+    --sidebar-width: clamp(240px, 18vw, 300px);
+    --taskbar-height: clamp(40px, 5vh, 60px);
 }
 
 .dark-theme {
@@ -93,34 +100,41 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
     height: 100vh;
     overflow: hidden;
+    font-size: var(--font-size-base);
 }
 
 #desktop {
     display: grid;
-    grid-template-columns: 250px 1fr;
-    grid-template-rows: 1fr 40px;
+    grid-template-columns: var(--sidebar-width) 1fr;
+    grid-template-rows: 1fr var(--taskbar-height);
     height: 100vh;
+    width: 100vw;
 }
 
 #sidebar {
     background: var(--sidebar-bg);
     backdrop-filter: var(--glass-effect);
+    -webkit-backdrop-filter: var(--glass-effect);
     border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    padding: 20px;
+    padding: clamp(10px, 2vw, 20px);
     z-index: 100;
+    overflow: hidden;
 }
 
 .sidebar-header h2 {
     margin-bottom: 10px;
-    font-size: 1.5rem;
+    font-size: var(--font-size-h2);
     color: var(--accent-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .sidebar-search {
@@ -293,18 +307,27 @@ body {
 #home-dashboard {
     background: var(--window-bg);
     backdrop-filter: var(--glass-effect);
-    padding: 40px;
-    border-radius: 15px;
-    max-width: 800px;
-    margin: 40px auto;
+    -webkit-backdrop-filter: var(--glass-effect);
+    padding: clamp(20px, 5vw, 60px);
+    border-radius: clamp(10px, 2vw, 30px);
+    max-width: 1000px;
+    width: 90%;
+    margin: clamp(20px, 5vh, 60px) auto;
     text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+#home-dashboard h1 {
+    font-size: var(--font-size-h1);
+    margin-bottom: 20px;
 }
 
 .quick-access {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(clamp(100px, 15vw, 150px), 1fr));
+    gap: clamp(10px, 2vw, 25px);
     margin-top: 30px;
+    padding: 10px;
 }
 
 .dashboard-tile {
@@ -337,13 +360,15 @@ body {
 
 #taskbar {
     grid-column: 1 / 3;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(15px);
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     display: flex;
     align-items: center;
-    padding: 0 10px;
+    padding: 0 clamp(5px, 2vw, 20px);
     color: white;
     z-index: 1000;
+    border-top: 1px solid rgba(255,255,255,0.1);
 }
 
 #start-menu-btn {
@@ -531,15 +556,23 @@ body {
 .toast-danger i { color: #f44336; }
 
 @media (max-width: 768px) {
+    :root {
+        --sidebar-width: 280px;
+    }
+
     #desktop {
         grid-template-columns: 1fr;
     }
 
     #sidebar {
-        position: absolute;
-        left: -250px;
-        height: calc(100vh - 40px);
-        transition: left 0.3s;
+        position: fixed;
+        left: calc(-1 * var(--sidebar-width));
+        top: 0;
+        bottom: var(--taskbar-height);
+        width: var(--sidebar-width);
+        height: auto;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 10px 0 30px rgba(0,0,0,0.3);
     }
 
     #sidebar.show {
@@ -548,9 +581,41 @@ body {
 
     #workspace {
         grid-column: 1 / 2;
+        padding: 10px;
     }
 
-    #start-menu-btn {
-        display: block;
+    #home-dashboard {
+        width: 95%;
+        padding: 20px;
+    }
+
+    .desktop-icon {
+        width: 70px;
+    }
+
+    #notification-center {
+        width: 90%;
+        left: 5%;
+        right: 5%;
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --font-size-h1: 1.75rem;
+        --font-size-h2: 1.25rem;
+    }
+
+    .quick-access {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 10px;
+    }
+
+    .dashboard-tile {
+        padding: 15px 10px;
+    }
+
+    .dashboard-tile i {
+        font-size: 1.8rem;
     }
 }

@@ -15,7 +15,7 @@ const LockScreen = {
             document.body.appendChild(lockEl);
         }
 
-        const users = JSON.parse(localStorage.getItem('hub_users') || '["default", "guest"]');
+        const users = Storage.listUsers();
 
         lockEl.innerHTML = `
             <div class="lock-content">
@@ -102,13 +102,15 @@ const LockScreen = {
     promptAddUser() {
         const name = prompt("Enter new username:");
         if (name) {
-            const users = JSON.parse(localStorage.getItem('hub_users') || '["default", "guest"]');
+            const users = Storage.listUsers();
             if (!users.includes(name.toLowerCase())) {
                 users.push(name.toLowerCase());
                 localStorage.setItem('hub_users', JSON.stringify(users));
-                // Set default PIN for new user in their specific storage space
-                localStorage.setItem(`hub_${name.toLowerCase()}_lock-passcode`, JSON.stringify("1234"));
+                const pin = prompt("Set a 4-digit PIN for this user (default 1234):", "1234");
+                localStorage.setItem(`hub_${name.toLowerCase()}_lock-passcode`, JSON.stringify(pin || "1234"));
                 this.show();
+            } else {
+                alert("Username already exists.");
             }
         }
     },
@@ -135,6 +137,7 @@ const LockScreen = {
             const lockEl = document.getElementById('lock-screen');
             lockEl.style.opacity = '0';
             lockEl.style.transform = 'scale(1.1)';
+            lockEl.style.pointerEvents = 'none';
             setTimeout(() => {
                 lockEl.remove();
                 clearInterval(this.timer);

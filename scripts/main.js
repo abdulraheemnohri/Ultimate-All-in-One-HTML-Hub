@@ -27,6 +27,8 @@ const Hub = {
         this.renderWidgets();
         this.applySettings();
         this.handleStartupApps();
+        this.handleMobileLayout();
+        window.addEventListener('resize', () => this.handleMobileLayout());
         // LockScreen v5
         const user = Storage.getUser();
         if (Storage.load('lock-enabled') || !localStorage.getItem('hub_current_user')) {
@@ -287,7 +289,28 @@ const Hub = {
         const now = new Date();
         const clockEl = document.getElementById('clock');
         if (clockEl) {
-            clockEl.textContent = now.toLocaleTimeString();
+            clockEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+    },
+
+    handleMobileLayout() {
+        const isMobile = window.innerWidth <= 768;
+        const sidebar = document.getElementById('sidebar');
+        const workspace = document.getElementById('workspace');
+
+        if (isMobile) {
+            // Close sidebar by default on mobile
+            sidebar.classList.remove('show');
+            // Maximize all open windows on mobile
+            this.windows.forEach(win => {
+                if (!win.el.classList.contains('minimized')) {
+                    win.el.classList.add('maximized');
+                    win.el.style.top = '0';
+                    win.el.style.left = '0';
+                    win.el.style.width = '100%';
+                    win.el.style.height = '100%';
+                }
+            });
         }
     },
 
@@ -452,7 +475,7 @@ const Hub = {
             }
         }
 
-        // Alt + M to toggle theme
+        // Alt + T to toggle theme
         if (e.altKey && e.key === 't') {
             this.toggleTheme();
         }
@@ -508,7 +531,9 @@ const Hub = {
             'file-manager': 'FileManagerApp', 'analytics': 'AnalyticsApp', 'sysmon': 'SysMonApp',
             'weather': 'WeatherApp', 'news': 'NewsApp', 'terminal': 'TerminalApp',
             'assistant': 'AssistantApp', 'mixer': 'MixerApp', 'taskman': 'TaskmanApp', 'lockscreen': 'LockScreen',
-            'code-editor': 'CodeEditorApp', 'app-store': 'AppStoreApp'
+            'code-editor': 'CodeEditorApp', 'app-store': 'AppStoreApp',
+            'quiz-gen': 'QuizGenApp', 'typing-trainer': 'TypingTrainerApp', 'kids-edu': 'KidsEduApp',
+            'adult-edu': 'AdultEduApp', 'user-manager': 'UserManagerApp'
         };
         return mapping[appId] || appId;
     },
@@ -517,12 +542,21 @@ const Hub = {
         const appName = this.getAppName(appId);
         const windowId = `window-${Utils.generateId()}`;
         this.workspaces[this.currentWorkspace].push(windowId);
+        const isMobile = window.innerWidth <= 768;
 
         const winEl = document.createElement('div');
-        winEl.className = 'window';
+        winEl.className = 'window' + (isMobile ? ' maximized' : '');
         winEl.id = windowId;
-        winEl.style.top = `${50 + (this.windows.length * 20)}px`;
-        winEl.style.left = `${50 + (this.windows.length * 20)}px`;
+
+        if (isMobile) {
+            winEl.style.top = '0';
+            winEl.style.left = '0';
+            winEl.style.width = '100%';
+            winEl.style.height = '100%';
+        } else {
+            winEl.style.top = `${50 + (this.windows.length * 20)}px`;
+            winEl.style.left = `${50 + (this.windows.length * 20)}px`;
+        }
         winEl.style.zIndex = ++this.zIndexCounter;
 
         winEl.innerHTML = `
@@ -616,7 +650,8 @@ const Hub = {
             'weather': 'weather', 'news': 'news', 'terminal': 'terminal',
             'assistant': 'assistant', 'mixer': 'mixer', 'taskman': 'taskman', 'lockscreen': 'lockscreen',
             'code-editor': 'code-editor', 'app-store': 'app-store', 'photo-studio': 'photo-studio', 'beat-maker': 'beat-maker',
-            'cloud-hub': 'cloud-hub', 'studio': 'studio'
+            'cloud-hub': 'cloud-hub', 'studio': 'studio', 'quiz-gen': 'quiz-gen', 'typing-trainer': 'typing-trainer',
+            'kids-edu': 'kids-edu', 'adult-edu': 'adult-edu', 'user-manager': 'user-manager'
         };
         const scriptName = mapping[appId] || appId;
         return `scripts/apps/${scriptName}.js`;
@@ -852,6 +887,16 @@ const Hub = {
                 return CloudHubApp.init(containerId, params);
             case 'studio':
                 return HubStudioApp.init(containerId, params);
+            case 'quiz-gen':
+                return QuizGenApp.init(containerId, params);
+            case 'typing-trainer':
+                return TypingTrainerApp.init(containerId, params);
+            case 'kids-edu':
+                return KidsEduApp.init(containerId, params);
+            case 'adult-edu':
+                return AdultEduApp.init(containerId, params);
+            case 'user-manager':
+                return UserManagerApp.init(containerId, params);
             case 'settings':
                 this.loadSettingsApp(containerId);
                 break;

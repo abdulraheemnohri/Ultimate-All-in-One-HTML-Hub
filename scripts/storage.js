@@ -10,6 +10,42 @@ const Storage = {
         return localStorage.getItem('hub_current_user') || 'default';
     },
 
+    isAdmin() {
+        return this.getUser() === 'default';
+    },
+
+    listUsers() {
+        return JSON.parse(localStorage.getItem('hub_users') || '["default", "guest"]');
+    },
+
+    addUser(username, pin = "1234") {
+        if (!this.isAdmin()) return false;
+        const users = this.listUsers();
+        if (users.includes(username.toLowerCase())) return false;
+
+        users.push(username.toLowerCase());
+        localStorage.setItem('hub_users', JSON.stringify(users));
+        localStorage.setItem(`hub_${username.toLowerCase()}_lock-passcode`, JSON.stringify(pin));
+        return true;
+    },
+
+    deleteUser(username) {
+        if (!this.isAdmin() || username === 'default') return false;
+        const users = this.listUsers();
+        const newUsers = users.filter(u => u !== username.toLowerCase());
+
+        if (users.length === newUsers.length) return false;
+
+        localStorage.setItem('hub_users', JSON.stringify(newUsers));
+        // Cleanup user data
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith(`hub_${username.toLowerCase()}_`)) {
+                localStorage.removeItem(key);
+            }
+        });
+        return true;
+    },
+
     save: (key, data) => {
         try {
             const user = Storage.getUser();

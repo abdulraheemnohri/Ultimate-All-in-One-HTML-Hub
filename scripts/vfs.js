@@ -8,23 +8,12 @@ const VFS = {
     storeName: 'files',
 
     async init() {
-        const user = Storage.getUser();
-        this.storeName = `files_${user}`;
         return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, 2); // Bump version for dynamic stores
+            const request = indexedDB.open(this.dbName, 3); // Unified multi-user store
             request.onupgradeneeded = (e) => {
                 const db = e.target.result;
-                // In a real multi-user app, we'd need to handle this more dynamically,
-                // but for v5 we'll ensure stores exist on the fly or during init.
-                const user = Storage.getUser();
-                const storeName = `files_${user}`;
-                if (!db.objectStoreNames.contains(storeName)) {
-                    const store = db.createObjectStore(storeName, { keyPath: 'path' });
-                    store.createIndex('parent', 'parent', { unique: false });
-                }
-                // Also ensure 'default' exists
-                if (!db.objectStoreNames.contains('files_default')) {
-                    const store = db.createObjectStore('files_default', { keyPath: 'path' });
+                if (!db.objectStoreNames.contains(this.storeName)) {
+                    const store = db.createObjectStore(this.storeName, { keyPath: 'path' });
                     store.createIndex('parent', 'parent', { unique: false });
                 }
             };
@@ -36,6 +25,11 @@ const VFS = {
         });
     },
 
+    getInternalPath(path) {
+        const user = Storage.getUser() || 'default';
+        return `${user}:${path}`;
+    },
+
     async ensureRoot() {
         const root = await this.getFile('/');
         if (!root) {
@@ -44,23 +38,40 @@ const VFS = {
     },
 
     async getFile(path) {
+        const internalPath = this.getInternalPath(path);
         return new Promise((resolve) => {
             const transaction = this.db.transaction([this.storeName], 'readonly');
             const store = transaction.objectStore(this.storeName);
-            const request = store.get(path);
-            request.onsuccess = () => resolve(request.result);
+            const request = store.get(internalPath);
+            request.onsuccess = () => {
+                if (request.result) {
+                    // Strip prefix for public consumption
+                    const file = { ...request.result };
+                    file.path = path;
+                    file.parent = path === '/' ? null : path.substring(0, path.lastIndexOf('/')) || '/';
+                    return resolve(file);
+                }
+                resolve(null);
+            };
             request.onerror = () => resolve(null);
         });
     },
 
+    async readFile(path) {
+        const file = await this.getFile(path);
+        return file ? file.content : null;
+    },
+
     async writeFile(path, content, type = 'text/plain', metadata = {}) {
+        const internalPath = this.getInternalPath(path);
         const parent = path === '/' ? null : path.substring(0, path.lastIndexOf('/')) || '/';
+        const internalParent = parent ? this.getInternalPath(parent) : null;
         const name = path === '/' ? '/' : path.substring(path.lastIndexOf('/') + 1);
 
         const file = {
-            path,
+            path: internalPath,
             name,
-            parent,
+            parent: internalParent,
             content,
             type,
             size: typeof content === 'string' ? content.length : (content.byteLength || 0),
@@ -72,24 +83,37 @@ const VFS = {
             const transaction = this.db.transaction([this.storeName], 'readwrite');
             const store = transaction.objectStore(this.storeName);
             const request = store.put(file);
-            request.onsuccess = () => resolve(file);
+            request.onsuccess = () => {
+                const publicFile = { ...file, path, parent };
+                resolve(publicFile);
+            };
             request.onerror = () => reject(request.error);
         });
     },
 
     async listFiles(parentPath) {
+        const internalParent = this.getInternalPath(parentPath);
         return new Promise((resolve) => {
             const transaction = this.db.transaction([this.storeName], 'readonly');
             const store = transaction.objectStore(this.storeName);
             const index = store.index('parent');
-            const request = index.getAll(parentPath);
-            request.onsuccess = () => resolve(request.result);
+            const request = index.getAll(internalParent);
+            request.onsuccess = () => {
+                const user = Storage.getUser() || 'default';
+                const prefix = `${user}:`;
+                const files = request.result.map(f => ({
+                    ...f,
+                    path: f.path.startsWith(prefix) ? f.path.substring(prefix.length) : f.path,
+                    parent: f.parent && f.parent.startsWith(prefix) ? f.parent.substring(prefix.length) : f.parent
+                }));
+                resolve(files);
+            };
             request.onerror = () => resolve([]);
         });
     },
 
     async deleteFile(path) {
-        // If directory, delete children too (recursively)
+        const internalPath = this.getInternalPath(path);
         const file = await this.getFile(path);
         if (file && file.type === 'directory') {
             const children = await this.listFiles(path);
@@ -101,7 +125,7 @@ const VFS = {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readwrite');
             const store = transaction.objectStore(this.storeName);
-            const request = store.delete(path);
+            const request = store.delete(internalPath);
             request.onsuccess = () => resolve();
             request.onerror = () => reject(request.error);
         });
