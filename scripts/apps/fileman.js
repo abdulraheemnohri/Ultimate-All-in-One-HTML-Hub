@@ -25,6 +25,7 @@ const FileManagerApp = {
                     <div class="actions">
                         <button onclick="FileManagerApp.triggerUpload()"><i class="fas fa-upload"></i> Upload</button>
                         <button onclick="FileManagerApp.createFolder()"><i class="fas fa-folder-plus"></i> New Folder</button>
+                        <button onclick="FileManagerApp.encryptPrompt()"><i class="fas fa-lock"></i> Encrypt</button>
                     </div>
                 </div>
                 <div id="fm-list" class="file-list">
@@ -155,5 +156,9 @@ const FileManagerApp = {
             await VFS.deleteFile(path);
             this.refresh();
         }
+    },
+
+    encryptPrompt() {
+        Utils.showToast("Encryption hints: Metadata will be tagged as encrypted in v5. (Logic placeholder)", "info");
     }
 };

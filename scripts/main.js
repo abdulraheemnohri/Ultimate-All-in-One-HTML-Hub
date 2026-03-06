@@ -19,6 +19,7 @@ const Hub = {
     init() {
         this.updateClock();
         setInterval(() => this.updateClock(), 1000);
+        ExtensionManager.init();
         this.setupEventListeners();
         this.registerServiceWorker();
         this.populateDashboard();
@@ -26,11 +27,14 @@ const Hub = {
         this.renderWidgets();
         this.applySettings();
         this.handleStartupApps();
-        // LockScreen will be loaded dynamically if needed
-        if (Storage.load('lock-enabled')) {
-            this.openApp('lockscreen');
+        // LockScreen v5
+        const user = Storage.getUser();
+        if (Storage.load('lock-enabled') || !localStorage.getItem('hub_current_user')) {
+            this.ensureAppLoaded('lockscreen').then(() => {
+                LockScreen.init();
+            });
         }
-        console.log("Hub Initialized");
+        console.log(`Hub Initialized for user: ${user}`);
     },
 
     handleStartupApps() {
@@ -52,7 +56,7 @@ const Hub = {
     },
 
     setSkin(skin) {
-        document.body.classList.remove('retro-skin', 'cyber-skin');
+        document.body.classList.remove('retro-skin', 'cyber-skin', 'holo-skin', 'eink-skin');
         if (skin !== 'default') document.body.classList.add(`${skin}-skin`);
         Storage.save('skin', skin);
     },
@@ -491,7 +495,7 @@ const Hub = {
              if (appId === 'settings') return;
         }
 
-        const scriptPath = `scripts/apps/${this.getAppScript(appId)}.js`;
+        const scriptPath = this.getAppScript(appId);
         if (this.loadedScripts.has(scriptPath)) return;
 
         return new Promise((resolve, reject) => {
@@ -507,6 +511,10 @@ const Hub = {
     },
 
     getAppScript(appId) {
+        if (this.extensionUrls && this.extensionUrls[appId]) {
+            return this.extensionUrls[appId];
+        }
+
         const mapping = {
             'todo': 'todo', 'habits': 'habits', 'pomodoro': 'pomodoro', 'notes': 'notes',
             'calendar': 'calendar', 'finance': 'finance', 'checklist': 'checklist',
@@ -524,9 +532,11 @@ const Hub = {
             'file-manager': 'fileman', 'analytics': 'analytics', 'sysmon': 'sysmon',
             'weather': 'weather', 'news': 'news', 'terminal': 'terminal',
             'assistant': 'assistant', 'mixer': 'mixer', 'taskman': 'taskman', 'lockscreen': 'lockscreen',
-            'code-editor': 'code-editor', 'app-store': 'app-store'
+            'code-editor': 'code-editor', 'app-store': 'app-store', 'photo-studio': 'photo-studio', 'beat-maker': 'beat-maker',
+            'cloud-hub': 'cloud-hub'
         };
-        return mapping[appId] || appId;
+        const scriptName = mapping[appId] || appId;
+        return `scripts/apps/${scriptName}.js`;
     },
 
     getAppName(appId) {
@@ -751,6 +761,12 @@ const Hub = {
                 return CodeEditorApp.init(containerId, params);
             case 'app-store':
                 return AppStoreApp.init(containerId, params);
+            case 'photo-studio':
+                return PhotoStudioApp.init(containerId, params);
+            case 'beat-maker':
+                return BeatMakerApp.init(containerId, params);
+            case 'cloud-hub':
+                return CloudHubApp.init(containerId, params);
             case 'settings':
                 this.loadSettingsApp(containerId);
                 break;
@@ -799,6 +815,8 @@ const Hub = {
                                 <option value="default" ${skin === 'default' ? 'selected' : ''}>Default Glass</option>
                                 <option value="retro" ${skin === 'retro' ? 'selected' : ''}>Retro Win95</option>
                                 <option value="cyber" ${skin === 'cyber' ? 'selected' : ''}>Cyberpunk Neon</option>
+                                <option value="holo" ${skin === 'holo' ? 'selected' : ''}>Holographic</option>
+                                <option value="eink" ${skin === 'eink' ? 'selected' : ''}>E-Ink Reader</option>
                             </select>
                         </div>
                     </div>
@@ -832,7 +850,8 @@ const Hub = {
                 </section>
                 <section style="margin-top: 20px;">
                     <h3>About</h3>
-                    <p>Ultimate All-in-One HTML Hub v1.1</p>
+                    <p>Ultimate All-in-One HTML Hub v5.0 (Platinum Edition)</p>
+                    <p>The absolute peak of vanilla web productivity.</p>
                 </section>
             </div>
             <style>

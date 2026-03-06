@@ -1,7 +1,19 @@
 const Storage = {
+    currentUser: 'default',
+
+    setUser(username) {
+        this.currentUser = username;
+        localStorage.setItem('hub_current_user', username);
+    },
+
+    getUser() {
+        return localStorage.getItem('hub_current_user') || 'default';
+    },
+
     save: (key, data) => {
         try {
-            localStorage.setItem(`hub_${key}`, JSON.stringify(data));
+            const user = Storage.getUser();
+            localStorage.setItem(`hub_${user}_${key}`, JSON.stringify(data));
             return true;
         } catch (e) {
             console.error("Storage save error:", e);
@@ -11,7 +23,8 @@ const Storage = {
 
     load: (key) => {
         try {
-            const data = localStorage.getItem(`hub_${key}`);
+            const user = Storage.getUser();
+            const data = localStorage.getItem(`hub_${user}_${key}`);
             return data ? JSON.parse(data) : null;
         } catch (e) {
             console.error("Storage load error:", e);
@@ -20,12 +33,14 @@ const Storage = {
     },
 
     remove: (key) => {
-        localStorage.removeItem(`hub_${key}`);
+        const user = Storage.getUser();
+        localStorage.removeItem(`hub_${user}_${key}`);
     },
 
     clearAll: () => {
+        const user = Storage.getUser();
         Object.keys(localStorage).forEach(key => {
-            if (key.startsWith('hub_')) {
+            if (key.startsWith(`hub_${user}_`)) {
                 localStorage.removeItem(key);
             }
         });
@@ -33,9 +48,10 @@ const Storage = {
 
     exportData: () => {
         const data = {};
+        const user = Storage.getUser();
         Object.keys(localStorage).forEach(key => {
-            if (key.startsWith('hub_')) {
-                data[key.replace('hub_', '')] = JSON.parse(localStorage.getItem(key));
+            if (key.startsWith(`hub_${user}_`)) {
+                data[key.replace(`hub_${user}_`, '')] = JSON.parse(localStorage.getItem(key));
             }
         });
         return JSON.stringify(data, null, 2);

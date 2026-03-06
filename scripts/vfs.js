@@ -8,12 +8,23 @@ const VFS = {
     storeName: 'files',
 
     async init() {
+        const user = Storage.getUser();
+        this.storeName = `files_${user}`;
         return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, 1);
+            const request = indexedDB.open(this.dbName, 2); // Bump version for dynamic stores
             request.onupgradeneeded = (e) => {
                 const db = e.target.result;
-                if (!db.objectStoreNames.contains(this.storeName)) {
-                    const store = db.createObjectStore(this.storeName, { keyPath: 'path' });
+                // In a real multi-user app, we'd need to handle this more dynamically,
+                // but for v5 we'll ensure stores exist on the fly or during init.
+                const user = Storage.getUser();
+                const storeName = `files_${user}`;
+                if (!db.objectStoreNames.contains(storeName)) {
+                    const store = db.createObjectStore(storeName, { keyPath: 'path' });
+                    store.createIndex('parent', 'parent', { unique: false });
+                }
+                // Also ensure 'default' exists
+                if (!db.objectStoreNames.contains('files_default')) {
+                    const store = db.createObjectStore('files_default', { keyPath: 'path' });
                     store.createIndex('parent', 'parent', { unique: false });
                 }
             };
