@@ -1,9 +1,32 @@
 const NotesApp = {
-    init(containerId) {
+    init(containerId, params = {}) {
         this.container = document.getElementById(containerId);
         this.notes = Storage.load('notes') || [];
         this.activeNote = null;
         this.render();
+        if (params.file) this.loadFile(params.file);
+    },
+
+    async loadFile(path) {
+        const file = await VFS.getFile(path);
+        if (file) {
+            const existing = this.notes.find(n => n.vfsPath === path);
+            if (existing) {
+                this.selectNote(existing.id);
+            } else {
+                const note = {
+                    id: Utils.generateId(),
+                    title: file.name,
+                    content: file.content,
+                    date: new Date().toISOString(),
+                    vfsPath: path
+                };
+                this.notes.unshift(note);
+                this.activeNote = note;
+                this.save();
+                this.render();
+            }
+        }
     },
 
     render() {
@@ -57,13 +80,17 @@ const NotesApp = {
         this.render();
     },
 
-    updateNote() {
+    async updateNote() {
         if (!this.activeNote) return;
         this.activeNote.title = document.getElementById('note-title').value;
         this.activeNote.content = document.getElementById('note-content').value;
         this.activeNote.date = new Date().toISOString();
+
+        if (this.activeNote.vfsPath) {
+            await VFS.writeFile(this.activeNote.vfsPath, this.activeNote.content, 'text/plain');
+        }
+
         this.save();
-        // Update the list without full re-render if possible, but for simplicity:
         const listItem = this.container.querySelector(`#notes-list li.active`);
         if (listItem) listItem.textContent = this.activeNote.title || 'Untitled';
     },

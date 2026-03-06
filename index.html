@@ -78,6 +78,13 @@
                     </ul>
                 </div>
                 <div class="nav-group">
+                    <h3>System</h3>
+                    <ul>
+                        <li data-app="app-store"><i class="fas fa-shopping-bag"></i> App Store</li>
+                        <li data-app="code-editor"><i class="fas fa-code"></i> Code Editor</li>
+                    </ul>
+                </div>
+                <div class="nav-group">
                     <h3>Tools</h3>
                     <ul>
                         <li data-app="calculator"><i class="fas fa-calculator"></i> Calculator</li>
@@ -109,6 +116,7 @@
         </aside>
 
         <main id="workspace">
+            <div id="desktop-widgets"></div>
             <!-- App windows will be injected here -->
             <div id="home-dashboard">
                 <h1>Welcome Back</h1>
@@ -121,6 +129,10 @@
         <footer id="taskbar">
             <div id="start-menu-btn"><i class="fab fa-windows"></i></div>
             <div id="running-apps"></div>
+            <div id="workspace-switcher">
+                <button onclick="Hub.switchWorkspace(0)" class="active">1</button>
+                <button onclick="Hub.switchWorkspace(1)">2</button>
+            </div>
             <div id="system-tray">
                 <span id="clock">00:00:00</span>
             </div>
@@ -129,58 +141,7 @@
 
     <script src="scripts/utils.js"></script>
     <script src="scripts/storage.js"></script>
-    <script src="scripts/apps/todo.js"></script>
-    <script src="scripts/apps/notes.js"></script>
-    <script src="scripts/apps/calendar.js"></script>
-    <script src="scripts/apps/finance.js"></script>
-    <script src="scripts/apps/sketchpad.js"></script>
-    <script src="scripts/apps/meme-gen.js"></script>
-    <script src="scripts/apps/quiz.js"></script>
-    <script src="scripts/apps/flashcards.js"></script>
-    <script src="scripts/apps/calculator.js"></script>
-    <script src="scripts/apps/audio-player.js"></script>
-    <script src="scripts/apps/video-player.js"></script>
-    <script src="scripts/apps/mini-browser.js"></script>
-    <script src="scripts/apps/games.js"></script>
-    <script src="scripts/apps/pomodoro.js"></script>
-    <script src="scripts/apps/habits.js"></script>
-    <script src="scripts/apps/checklist.js"></script>
-    <script src="scripts/apps/books.js"></script>
-    <script src="scripts/apps/planner.js"></script>
-    <script src="scripts/apps/recipes.js"></script>
-    <script src="scripts/apps/goals.js"></script>
-    <script src="scripts/apps/photo-edit.js"></script>
-    <script src="scripts/apps/collage.js"></script>
-    <script src="scripts/apps/pixelart.js"></script>
-    <script src="scripts/apps/logodesign.js"></script>
-    <script src="scripts/apps/typing.js"></script>
-    <script src="scripts/apps/math.js"></script>
-    <script src="scripts/apps/vocab.js"></script>
-    <script src="scripts/apps/minesweeper.js"></script>
-    <script src="scripts/apps/hangman.js"></script>
-    <script src="scripts/apps/memory.js"></script>
-    <script src="scripts/apps/rps.js"></script>
-    <script src="scripts/apps/soundboard.js"></script>
-    <script src="scripts/apps/timezone.js"></script>
-    <script src="scripts/apps/lorem.js"></script>
-    <script src="scripts/apps/voicerec.js"></script>
-    <script src="scripts/apps/converter.js"></script>
-    <script src="scripts/apps/qrcode.js"></script>
-    <script src="scripts/apps/palette.js"></script>
-    <script src="scripts/apps/typography.js"></script>
-    <script src="scripts/apps/textutils.js"></script>
-    <script src="scripts/apps/passgen.js"></script>
-    <script src="scripts/apps/markdown.js"></script>
-    <script src="scripts/apps/fileman.js"></script>
-    <script src="scripts/apps/analytics.js"></script>
-    <script src="scripts/apps/sysmon.js"></script>
-    <script src="scripts/apps/weather.js"></script>
-    <script src="scripts/apps/news.js"></script>
-    <script src="scripts/apps/terminal.js"></script>
-    <script src="scripts/apps/assistant.js"></script>
-    <script src="scripts/apps/mixer.js"></script>
-    <script src="scripts/apps/taskman.js"></script>
-    <script src="scripts/apps/lockscreen.js"></script>
+    <script src="scripts/vfs.js"></script>
     <script src="scripts/main.js"></script>
 </body>
 </html>

@@ -2,7 +2,8 @@
  * Ultimate All-in-One HTML Hub - Main Logic
  */
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await VFS.init();
     Hub.init();
 });
 
@@ -12,6 +13,8 @@ const Hub = {
     activeWindow: null,
     zIndexCounter: 100,
     appCleanups: {},
+    currentWorkspace: 0,
+    workspaces: [[], []],
 
     init() {
         this.updateClock();
@@ -20,9 +23,13 @@ const Hub = {
         this.registerServiceWorker();
         this.populateDashboard();
         this.renderDesktopIcons();
+        this.renderWidgets();
         this.applySettings();
         this.handleStartupApps();
-        if (window.LockScreen) LockScreen.init();
+        // LockScreen will be loaded dynamically if needed
+        if (Storage.load('lock-enabled')) {
+            this.openApp('lockscreen');
+        }
         console.log("Hub Initialized");
     },
 
@@ -39,6 +46,15 @@ const Hub = {
 
         const blur = Storage.load('glass-blur');
         if (blur) document.documentElement.style.setProperty('--glass-effect', `blur(${blur}px)`);
+
+        const skin = Storage.load('skin') || 'default';
+        this.setSkin(skin);
+    },
+
+    setSkin(skin) {
+        document.body.classList.remove('retro-skin', 'cyber-skin');
+        if (skin !== 'default') document.body.classList.add(`${skin}-skin`);
+        Storage.save('skin', skin);
     },
 
     registerServiceWorker() {
@@ -271,30 +287,76 @@ const Hub = {
         }
     },
 
-    filterApps(query) {
+    async filterApps(query) {
         query = query.toLowerCase();
+        const sidebarNav = document.getElementById('sidebar-nav');
+
+        // Remove existing global search results
+        const existingResults = document.getElementById('global-search-results');
+        if (existingResults) existingResults.remove();
+
+        if (!query) {
+            sidebarNav.style.display = 'block';
+            document.querySelectorAll('#sidebar-nav li').forEach(li => li.style.display = 'block');
+            document.querySelectorAll('.nav-group').forEach(g => g.style.display = 'block');
+            return;
+        }
+
+        sidebarNav.style.display = 'none';
+
+        const resultsDiv = document.createElement('div');
+        resultsDiv.id = 'global-search-results';
+        resultsDiv.className = 'nav-group';
+        resultsDiv.innerHTML = '<h3>Search Results</h3><ul id="search-results-list"></ul>';
+        sidebarNav.parentElement.insertBefore(resultsDiv, sidebarNav.nextSibling);
+        const list = resultsDiv.querySelector('ul');
+
+        // 1. Search Apps
         document.querySelectorAll('#sidebar-nav li').forEach(item => {
             const text = item.textContent.toLowerCase();
-            const group = item.closest('.nav-group');
+            const appId = item.getAttribute('data-app');
             if (text.includes(query)) {
-                item.style.display = 'block';
-            } else {
-                item.style.display = 'none';
+                const li = document.createElement('li');
+                li.innerHTML = item.innerHTML;
+                li.onclick = () => this.openApp(appId);
+                list.appendChild(li);
             }
         });
 
-        // Hide groups if empty
-        document.querySelectorAll('.nav-group').forEach(group => {
-            const visibleItems = group.querySelectorAll('li[style="display: block;"]').length;
-            const allItems = group.querySelectorAll('li').length;
-            // If query is empty, show all
-            if (!query) {
-                group.style.display = 'block';
-                group.querySelectorAll('li').forEach(li => li.style.display = 'block');
-            } else {
-                group.style.display = visibleItems > 0 ? 'block' : 'none';
-            }
+        // 2. Search VFS Files
+        const allFiles = await this.searchVFS(query);
+        allFiles.forEach(file => {
+            const li = document.createElement('li');
+            li.innerHTML = `<i class="fas ${file.type === 'directory' ? 'fa-folder' : 'fa-file'}"></i> ${file.name}`;
+            li.onclick = () => {
+                if (file.type === 'directory') {
+                    this.openApp('file-manager', { path: file.path });
+                } else {
+                    const appId = VFS.getAssociation(file.name);
+                    this.openApp(appId, { file: file.path });
+                }
+            };
+            list.appendChild(li);
         });
+
+        if (list.children.length === 0) {
+            list.innerHTML = '<li style="opacity:0.5">No results found</li>';
+        }
+    },
+
+    async searchVFS(query, path = '/') {
+        let results = [];
+        const files = await VFS.listFiles(path);
+        for (const file of files) {
+            if (file.name.toLowerCase().includes(query)) {
+                results.push(file);
+            }
+            if (file.type === 'directory') {
+                const subResults = await this.searchVFS(query, file.path);
+                results = results.concat(subResults);
+            }
+        }
+        return results;
     },
 
     handleKeyboard(e) {
@@ -332,20 +394,51 @@ const Hub = {
         }
     },
 
-    openApp(appId) {
+    openApp(appId, params = {}) {
         // Check if app already open
         const existingWindow = this.windows.find(w => w.appId === appId);
         if (existingWindow) {
             this.focusWindow(existingWindow.el);
+            if (params.file) {
+                // If opening a file, pass it to the app if it's already open
+                const appInstance = window[this.getAppClassName(appId)];
+                if (appInstance && appInstance.loadFile) {
+                    appInstance.loadFile(params.file);
+                }
+            }
             return;
         }
 
-        this.createWindow(appId);
+        this.createWindow(appId, params);
     },
 
-    createWindow(appId) {
+    getAppClassName(appId) {
+        const mapping = {
+            'todo': 'TodoApp', 'habits': 'HabitTrackerApp', 'pomodoro': 'PomodoroApp', 'notes': 'NotesApp',
+            'calendar': 'CalendarApp', 'finance': 'FinanceApp', 'checklist': 'ChecklistApp',
+            'reading-list': 'ReadingListApp', 'planner': 'PlannerApp', 'recipes': 'RecipeApp', 'goals': 'GoalTrackerApp',
+            'sketchpad': 'SketchpadApp', 'meme-gen': 'MemeApp', 'palette': 'PaletteApp',
+            'typography': 'TypographyApp', 'pixelart': 'PixelArtApp', 'logodesign': 'LogoApp',
+            'photo-edit': 'PhotoEditApp', 'collage': 'CollageApp', 'quiz': 'QuizApp',
+            'flashcards': 'FlashcardsApp', 'typing': 'TypingApp', 'math': 'MathApp', 'vocab': 'VocabApp',
+            'games': 'GamesApp', 'minesweeper': 'MinesweeperApp', 'hangman': 'HangmanApp',
+            'memory': 'MemoryApp', 'rps': 'RPSApp', 'audio-player': 'AudioPlayerApp',
+            'video-player': 'VideoPlayerApp', 'soundboard': 'SoundboardApp', 'calculator': 'CalculatorApp',
+            'converter': 'ConverterApp', 'qrcode': 'QRCodeApp', 'text-utils': 'TextUtilsApp',
+            'pass-gen': 'PassGenApp', 'timezone': 'TimezoneApp', 'lorem': 'LoremApp',
+            'voice-rec': 'VoiceRecApp', 'mini-browser': 'MiniBrowserApp', 'markdown': 'MarkdownApp',
+            'file-manager': 'FileManagerApp', 'analytics': 'AnalyticsApp', 'sysmon': 'SysMonApp',
+            'weather': 'WeatherApp', 'news': 'NewsApp', 'terminal': 'TerminalApp',
+            'assistant': 'AssistantApp', 'mixer': 'MixerApp', 'taskman': 'TaskmanApp', 'lockscreen': 'LockScreen',
+            'code-editor': 'CodeEditorApp', 'app-store': 'AppStoreApp'
+        };
+        return mapping[appId] || appId;
+    },
+
+    async createWindow(appId, params = {}) {
         const appName = this.getAppName(appId);
         const windowId = `window-${Utils.generateId()}`;
+        this.workspaces[this.currentWorkspace].push(windowId);
 
         const winEl = document.createElement('div');
         winEl.className = 'window';
@@ -376,14 +469,64 @@ const Hub = {
         this.focusWindow(winEl);
         this.addToTaskbar(winObj);
 
-        // Load app-specific logic
-        const cleanup = this.loadAppContent(appId, `content-${windowId}`);
-        if (typeof cleanup === 'function') {
-            this.appCleanups[windowId] = cleanup;
+        // Dynamic Loading Logic
+        try {
+            await this.ensureAppLoaded(appId);
+            const cleanup = this.loadAppContent(appId, `content-${windowId}`, params);
+            if (typeof cleanup === 'function') {
+                this.appCleanups[windowId] = cleanup;
+            }
+        } catch (error) {
+            console.error(`Failed to load app: ${appId}`, error);
+            document.getElementById(`content-${windowId}`).innerHTML = `<p class="error">Error loading ${appName}. Please check your connection.</p>`;
         }
 
-        // Setup Drag & Resize (to be implemented in next step)
         this.setupWindowInteractions(winEl);
+    },
+
+    loadedScripts: new Set(),
+    async ensureAppLoaded(appId) {
+        if (appId === 'settings' || appId === 'lockscreen') {
+             // Settings is built-in to Hub for now, but lockscreen is external
+             if (appId === 'settings') return;
+        }
+
+        const scriptPath = `scripts/apps/${this.getAppScript(appId)}.js`;
+        if (this.loadedScripts.has(scriptPath)) return;
+
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = scriptPath;
+            script.onload = () => {
+                this.loadedScripts.add(scriptPath);
+                resolve();
+            };
+            script.onerror = reject;
+            document.body.appendChild(script);
+        });
+    },
+
+    getAppScript(appId) {
+        const mapping = {
+            'todo': 'todo', 'habits': 'habits', 'pomodoro': 'pomodoro', 'notes': 'notes',
+            'calendar': 'calendar', 'finance': 'finance', 'checklist': 'checklist',
+            'reading-list': 'books', 'planner': 'planner', 'recipes': 'recipes', 'goals': 'goals',
+            'sketchpad': 'sketchpad', 'meme-gen': 'meme-gen', 'palette': 'palette',
+            'typography': 'typography', 'pixelart': 'pixelart', 'logodesign': 'logodesign',
+            'photo-edit': 'photo-edit', 'collage': 'collage', 'quiz': 'quiz',
+            'flashcards': 'flashcards', 'typing': 'typing', 'math': 'math', 'vocab': 'vocab',
+            'games': 'games', 'minesweeper': 'minesweeper', 'hangman': 'hangman',
+            'memory': 'memory', 'rps': 'rps', 'audio-player': 'audio-player',
+            'video-player': 'video-player', 'soundboard': 'soundboard', 'calculator': 'calculator',
+            'converter': 'converter', 'qrcode': 'qrcode', 'text-utils': 'textutils',
+            'pass-gen': 'passgen', 'timezone': 'timezone', 'lorem': 'lorem',
+            'voice-rec': 'voicerec', 'mini-browser': 'mini-browser', 'markdown': 'markdown',
+            'file-manager': 'fileman', 'analytics': 'analytics', 'sysmon': 'sysmon',
+            'weather': 'weather', 'news': 'news', 'terminal': 'terminal',
+            'assistant': 'assistant', 'mixer': 'mixer', 'taskman': 'taskman', 'lockscreen': 'lockscreen',
+            'code-editor': 'code-editor', 'app-store': 'app-store'
+        };
+        return mapping[appId] || appId;
     },
 
     getAppName(appId) {
@@ -413,6 +556,11 @@ const Hub = {
         const index = this.windows.findIndex(w => w.id === windowId);
         if (index !== -1) {
             const win = this.windows[index];
+
+            // Remove from workspaces
+            this.workspaces.forEach((ws, i) => {
+                this.workspaces[i] = ws.filter(id => id !== windowId);
+            });
 
             // Cleanup app logic
             if (this.appCleanups[windowId]) {
@@ -493,112 +641,116 @@ const Hub = {
         if (item) item.remove();
     },
 
-    loadAppContent(appId, containerId) {
+    loadAppContent(appId, containerId, params = {}) {
         const container = document.getElementById(containerId);
 
         switch(appId) {
             case 'todo':
-                return TodoApp.init(containerId);
+                return TodoApp.init(containerId, params);
             case 'pomodoro':
-                return PomodoroApp.init(containerId);
+                return PomodoroApp.init(containerId, params);
             case 'habits':
-                return HabitTrackerApp.init(containerId);
+                return HabitTrackerApp.init(containerId, params);
             case 'checklist':
-                return ChecklistApp.init(containerId);
+                return ChecklistApp.init(containerId, params);
             case 'reading-list':
-                return ReadingListApp.init(containerId);
+                return ReadingListApp.init(containerId, params);
             case 'planner':
-                return PlannerApp.init(containerId);
+                return PlannerApp.init(containerId, params);
             case 'recipes':
-                return RecipeApp.init(containerId);
+                return RecipeApp.init(containerId, params);
             case 'goals':
-                return GoalTrackerApp.init(containerId);
+                return GoalTrackerApp.init(containerId, params);
             case 'notes':
-                return NotesApp.init(containerId);
+                return NotesApp.init(containerId, params);
             case 'calendar':
-                return CalendarApp.init(containerId);
+                return CalendarApp.init(containerId, params);
             case 'finance':
-                return FinanceApp.init(containerId);
+                return FinanceApp.init(containerId, params);
             case 'sketchpad':
-                return SketchpadApp.init(containerId);
+                return SketchpadApp.init(containerId, params);
             case 'meme-gen':
-                return MemeApp.init(containerId);
+                return MemeApp.init(containerId, params);
             case 'palette':
-                return PaletteApp.init(containerId);
+                return PaletteApp.init(containerId, params);
             case 'typography':
-                return TypographyApp.init(containerId);
+                return TypographyApp.init(containerId, params);
             case 'pixelart':
-                return PixelArtApp.init(containerId);
+                return PixelArtApp.init(containerId, params);
             case 'logodesign':
-                return LogoApp.init(containerId);
+                return LogoApp.init(containerId, params);
             case 'photo-edit':
-                return PhotoEditApp.init(containerId);
+                return PhotoEditApp.init(containerId, params);
             case 'collage':
-                return CollageApp.init(containerId);
+                return CollageApp.init(containerId, params);
             case 'quiz':
-                return QuizApp.init(containerId);
+                return QuizApp.init(containerId, params);
             case 'flashcards':
-                return FlashcardsApp.init(containerId);
+                return FlashcardsApp.init(containerId, params);
             case 'typing':
-                return TypingApp.init(containerId);
+                return TypingApp.init(containerId, params);
             case 'math':
-                return MathApp.init(containerId);
+                return MathApp.init(containerId, params);
             case 'vocab':
-                return VocabApp.init(containerId);
+                return VocabApp.init(containerId, params);
             case 'calculator':
-                return CalculatorApp.init(containerId);
+                return CalculatorApp.init(containerId, params);
             case 'converter':
-                return ConverterApp.init(containerId);
+                return ConverterApp.init(containerId, params);
             case 'qrcode':
-                return QRCodeApp.init(containerId);
+                return QRCodeApp.init(containerId, params);
             case 'text-utils':
-                return TextUtilsApp.init(containerId);
+                return TextUtilsApp.init(containerId, params);
             case 'pass-gen':
-                return PassGenApp.init(containerId);
+                return PassGenApp.init(containerId, params);
             case 'timezone':
-                return TimezoneApp.init(containerId);
+                return TimezoneApp.init(containerId, params);
             case 'lorem':
-                return LoremApp.init(containerId);
+                return LoremApp.init(containerId, params);
             case 'voice-rec':
-                return VoiceRecApp.init(containerId);
+                return VoiceRecApp.init(containerId, params);
             case 'soundboard':
-                return SoundboardApp.init(containerId);
+                return SoundboardApp.init(containerId, params);
             case 'audio-player':
-                return AudioPlayerApp.init(containerId);
+                return AudioPlayerApp.init(containerId, params);
             case 'video-player':
-                return VideoPlayerApp.init(containerId);
+                return VideoPlayerApp.init(containerId, params);
             case 'mini-browser':
-                return MiniBrowserApp.init(containerId);
+                return MiniBrowserApp.init(containerId, params);
             case 'markdown':
-                return MarkdownApp.init(containerId);
+                return MarkdownApp.init(containerId, params);
             case 'file-manager':
-                return FileManagerApp.init(containerId);
+                return FileManagerApp.init(containerId, params);
             case 'minesweeper':
-                return MinesweeperApp.init(containerId);
+                return MinesweeperApp.init(containerId, params);
             case 'hangman':
-                return HangmanApp.init(containerId);
+                return HangmanApp.init(containerId, params);
             case 'memory':
-                return MemoryApp.init(containerId);
+                return MemoryApp.init(containerId, params);
             case 'rps':
-                return RPSApp.init(containerId);
+                return RPSApp.init(containerId, params);
             case 'analytics':
-                return AnalyticsApp.init(containerId);
+                return AnalyticsApp.init(containerId, params);
             case 'sysmon':
-                return SysMonApp.init(containerId);
+                return SysMonApp.init(containerId, params);
             case 'weather':
-                return WeatherApp.init(containerId);
+                return WeatherApp.init(containerId, params);
             case 'news':
-                return NewsApp.init(containerId);
+                return NewsApp.init(containerId, params);
             case 'terminal':
-                return TerminalApp.init(containerId);
+                return TerminalApp.init(containerId, params);
             case 'assistant':
-                return AssistantApp.init(containerId);
+                return AssistantApp.init(containerId, params);
             case 'mixer':
-                return MixerApp.init(containerId);
+                return MixerApp.init(containerId, params);
             case 'taskman':
-                return TaskmanApp.init(containerId);
+                return TaskmanApp.init(containerId, params);
             case 'games':
-                return GamesApp.init(containerId);
+                return GamesApp.init(containerId, params);
+            case 'code-editor':
+                return CodeEditorApp.init(containerId, params);
+            case 'app-store':
+                return AppStoreApp.init(containerId, params);
             case 'settings':
                 this.loadSettingsApp(containerId);
                 break;
@@ -611,6 +763,7 @@ const Hub = {
         const container = document.getElementById(containerId);
         const accent = Storage.load('accent-color') || '#0078d4';
         const blur = Storage.load('glass-blur') || '10';
+        const skin = Storage.load('skin') || 'default';
         const lockEnabled = Storage.load('lock-enabled') || false;
 
         container.innerHTML = `
@@ -631,7 +784,7 @@ const Hub = {
                         <div class="wp-preset" style="background: #333; color: #fff; display:flex; align-items:center; justify-content:center; font-size:10px;" onclick="Hub.setWallpaper('particles')">PRT</div>
                     </div>
 
-                    <div style="margin-top: 15px; display: flex; gap: 20px; align-items: center;">
+                    <div style="margin-top: 15px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
                         <div>
                             <p>Accent Color</p>
                             <input type="color" id="accent-picker" value="${accent}" onchange="Hub.changeAccent(this.value)">
@@ -639,6 +792,14 @@ const Hub = {
                         <div>
                             <p>Glass Blur (px)</p>
                             <input type="range" min="0" max="30" value="${blur}" oninput="Hub.changeBlur(this.value)">
+                        </div>
+                        <div>
+                            <p>System Skin</p>
+                            <select onchange="Hub.setSkin(this.value)" style="padding: 5px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color);">
+                                <option value="default" ${skin === 'default' ? 'selected' : ''}>Default Glass</option>
+                                <option value="retro" ${skin === 'retro' ? 'selected' : ''}>Retro Win95</option>
+                                <option value="cyber" ${skin === 'cyber' ? 'selected' : ''}>Cyberpunk Neon</option>
+                            </select>
                         </div>
                     </div>
                 </section>
@@ -925,6 +1086,73 @@ const Hub = {
             });
         });
         Storage.save('desktop-icons', icons);
+    },
+
+    switchWorkspace(index) {
+        if (this.currentWorkspace === index) return;
+
+        // Hide current workspace windows
+        this.workspaces[this.currentWorkspace].forEach(id => {
+            const win = this.windows.find(w => w.id === id);
+            if (win) win.el.style.display = 'none';
+        });
+
+        this.currentWorkspace = index;
+
+        // Show new workspace windows
+        this.workspaces[this.currentWorkspace].forEach(id => {
+            const win = this.windows.find(w => w.id === id);
+            if (win && !win.el.classList.contains('minimized')) {
+                win.el.style.display = 'flex';
+            }
+        });
+
+        // Update UI
+        document.querySelectorAll('#workspace-switcher button').forEach((btn, i) => {
+            btn.classList.toggle('active', i === index);
+        });
+
+        Utils.showToast(`Switched to Workspace ${index + 1}`, 'info');
+    },
+
+    renderWidgets() {
+        const container = document.getElementById('desktop-widgets');
+        container.innerHTML = '';
+        const activeWidgets = Storage.load('active-widgets') || ['clock-widget', 'sys-widget'];
+
+        activeWidgets.forEach(type => {
+            const widget = document.createElement('div');
+            widget.className = 'widget ' + type;
+            if (type === 'clock-widget') {
+                widget.innerHTML = `<div id="widget-clock">00:00</div><div id="widget-date">Date</div>`;
+                this.startWidgetClock(widget);
+            } else if (type === 'sys-widget') {
+                widget.innerHTML = `<h4>System</h4><div class="stat">CPU: <span id="w-cpu">5%</span></div><div class="stat">RAM: <span id="w-ram">12%</span></div>`;
+                this.startWidgetSys(widget);
+            }
+            container.appendChild(widget);
+        });
+    },
+
+    startWidgetClock(el) {
+        const update = () => {
+            const now = new Date();
+            const clock = el.querySelector('#widget-clock');
+            const date = el.querySelector('#widget-date');
+            if (clock) clock.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            if (date) date.textContent = now.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
+        };
+        update();
+        setInterval(update, 60000);
+    },
+
+    startWidgetSys(el) {
+        setInterval(() => {
+            const cpu = el.querySelector('#w-cpu');
+            const ram = el.querySelector('#w-ram');
+            if (cpu) cpu.textContent = Math.floor(Math.random() * 15 + 2) + '%';
+            if (ram) ram.textContent = Math.floor(Math.random() * 10 + 20) + '%';
+        }, 3000);
     },
 
     setupWindowInteractions(winEl) {

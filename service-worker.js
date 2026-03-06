@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hub-v3';
+const CACHE_NAME = 'hub-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -6,59 +6,7 @@ const ASSETS = [
   './styles/app-windows.css',
   './scripts/main.js',
   './scripts/storage.js',
-  './scripts/utils.js',
-  './scripts/apps/analytics.js',
-  './scripts/apps/assistant.js',
-  './scripts/apps/audio-player.js',
-  './scripts/apps/books.js',
-  './scripts/apps/calculator.js',
-  './scripts/apps/calendar.js',
-  './scripts/apps/checklist.js',
-  './scripts/apps/collage.js',
-  './scripts/apps/converter.js',
-  './scripts/apps/fileman.js',
-  './scripts/apps/finance.js',
-  './scripts/apps/flashcards.js',
-  './scripts/apps/games.js',
-  './scripts/apps/goals.js',
-  './scripts/apps/habits.js',
-  './scripts/apps/hangman.js',
-  './scripts/apps/lockscreen.js',
-  './scripts/apps/logodesign.js',
-  './scripts/apps/lorem.js',
-  './scripts/apps/markdown.js',
-  './scripts/apps/math.js',
-  './scripts/apps/meme-gen.js',
-  './scripts/apps/memory.js',
-  './scripts/apps/minesweeper.js',
-  './scripts/apps/mini-browser.js',
-  './scripts/apps/mixer.js',
-  './scripts/apps/news.js',
-  './scripts/apps/notes.js',
-  './scripts/apps/palette.js',
-  './scripts/apps/passgen.js',
-  './scripts/apps/photo-edit.js',
-  './scripts/apps/pixelart.js',
-  './scripts/apps/planner.js',
-  './scripts/apps/pomodoro.js',
-  './scripts/apps/qrcode.js',
-  './scripts/apps/quiz.js',
-  './scripts/apps/recipes.js',
-  './scripts/apps/rps.js',
-  './scripts/apps/sketchpad.js',
-  './scripts/apps/soundboard.js',
-  './scripts/apps/sysmon.js',
-  './scripts/apps/taskman.js',
-  './scripts/apps/terminal.js',
-  './scripts/apps/textutils.js',
-  './scripts/apps/timezone.js',
-  './scripts/apps/todo.js',
-  './scripts/apps/typing.js',
-  './scripts/apps/typography.js',
-  './scripts/apps/video-player.js',
-  './scripts/apps/vocab.js',
-  './scripts/apps/voicerec.js',
-  './scripts/apps/weather.js'
+  './scripts/utils.js'
 ];
 
 self.addEventListener('install', (e) => {
@@ -69,6 +17,21 @@ self.addEventListener('install', (e) => {
 
 self.addEventListener('fetch', (e) => {
   e.respondWith(
-    caches.match(e.request).then((res) => res || fetch(e.request))
+    caches.match(e.request).then((res) => {
+      if (res) return res;
+      return fetch(e.request).then((response) => {
+        if (!response || response.status !== 200 || response.type !== 'basic') {
+          return response;
+        }
+        // Dynamically cache app scripts as they are requested
+        if (e.request.url.includes('/scripts/apps/')) {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(e.request, responseToCache);
+          });
+        }
+        return response;
+      });
+    })
   );
 });
