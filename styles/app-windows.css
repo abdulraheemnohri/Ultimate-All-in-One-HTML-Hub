@@ -10,8 +10,19 @@
     min-width: 300px;
     min-height: 200px;
     z-index: 10;
-    transition: width 0.2s, height 0.2s, top 0.2s, left 0.2s, opacity 0.2s, transform 0.2s;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                top 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.2s,
+                transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     animation: windowOpen 0.3s ease-out;
+}
+
+.window.minimized {
+    transform: scale(0.3) translateY(500px);
+    opacity: 0;
+    pointer-events: none;
 }
 
 @keyframes windowOpen {

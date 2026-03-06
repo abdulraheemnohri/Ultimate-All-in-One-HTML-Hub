@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hub-v2';
+const CACHE_NAME = 'hub-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -8,6 +8,7 @@ const ASSETS = [
   './scripts/storage.js',
   './scripts/utils.js',
   './scripts/apps/analytics.js',
+  './scripts/apps/assistant.js',
   './scripts/apps/audio-player.js',
   './scripts/apps/books.js',
   './scripts/apps/calculator.js',
@@ -31,6 +32,7 @@ const ASSETS = [
   './scripts/apps/memory.js',
   './scripts/apps/minesweeper.js',
   './scripts/apps/mini-browser.js',
+  './scripts/apps/mixer.js',
   './scripts/apps/news.js',
   './scripts/apps/notes.js',
   './scripts/apps/palette.js',
@@ -46,6 +48,8 @@ const ASSETS = [
   './scripts/apps/sketchpad.js',
   './scripts/apps/soundboard.js',
   './scripts/apps/sysmon.js',
+  './scripts/apps/taskman.js',
+  './scripts/apps/terminal.js',
   './scripts/apps/textutils.js',
   './scripts/apps/timezone.js',
   './scripts/apps/todo.js',

@@ -19,9 +19,18 @@ const Hub = {
         this.setupEventListeners();
         this.registerServiceWorker();
         this.populateDashboard();
+        this.renderDesktopIcons();
         this.applySettings();
+        this.handleStartupApps();
         if (window.LockScreen) LockScreen.init();
         console.log("Hub Initialized");
+    },
+
+    handleStartupApps() {
+        const startup = Storage.load('startup-apps') || [];
+        startup.forEach(appId => {
+            setTimeout(() => this.openApp(appId), 500);
+        });
     },
 
     applySettings() {
@@ -105,7 +114,13 @@ const Hub = {
 
     setWallpaper(wp) {
         const workspace = document.getElementById('workspace');
-        if (wp.startsWith('http') || wp.startsWith('data:')) {
+        this.stopLiveWallpaper();
+
+        if (wp === 'matrix') {
+            this.startLiveWallpaper('matrix');
+        } else if (wp === 'particles') {
+            this.startLiveWallpaper('particles');
+        } else if (wp.startsWith('http') || wp.startsWith('data:')) {
             workspace.style.backgroundImage = `url('${wp}')`;
             workspace.style.backgroundColor = '';
         } else {
@@ -113,6 +128,115 @@ const Hub = {
             workspace.style.background = wp;
         }
         Storage.save('wallpaper', wp);
+    },
+
+    startLiveWallpaper(type) {
+        const workspace = document.getElementById('workspace');
+        let canvas = document.getElementById('live-wallpaper-canvas');
+        if (!canvas) {
+            canvas = document.createElement('canvas');
+            canvas.id = 'live-wallpaper-canvas';
+            canvas.style.position = 'absolute';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            canvas.style.zIndex = '0';
+            workspace.prepend(canvas);
+        }
+
+        const ctx = canvas.getContext('2d');
+        canvas.width = workspace.offsetWidth;
+        canvas.height = workspace.offsetHeight;
+
+        if (type === 'matrix') {
+            const characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const fontSize = 16;
+            const columns = canvas.width / fontSize;
+            const drops = Array(Math.floor(columns)).fill(1);
+
+            this.liveWallpaperInterval = setInterval(() => {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#0F0';
+                ctx.font = fontSize + 'px monospace';
+
+                for (let i = 0; i < drops.length; i++) {
+                    const text = characters.charAt(Math.floor(Math.random() * characters.length));
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    drops[i]++;
+                }
+            }, 33);
+        } else if (type === 'particles') {
+            const particles = Array(100).fill().map(() => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: (Math.random() - 0.5) * 2,
+                vy: (Math.random() - 0.5) * 2,
+                size: Math.random() * 3
+            }));
+
+            this.liveWallpaperInterval = setInterval(() => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                    if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }, 33);
+        }
+    },
+
+    stopLiveWallpaper() {
+        if (this.liveWallpaperInterval) {
+            clearInterval(this.liveWallpaperInterval);
+            this.liveWallpaperInterval = null;
+        }
+        const canvas = document.getElementById('live-wallpaper-canvas');
+        if (canvas) canvas.remove();
+    },
+
+    renderDesktopIcons() {
+        const workspace = document.getElementById('workspace');
+        // Remove existing icons
+        workspace.querySelectorAll('.desktop-icon').forEach(el => el.remove());
+
+        const defaultIcons = [
+            { id: 'todo', name: 'My Tasks', icon: 'fa-check-double', x: 20, y: 20 },
+            { id: 'notes', name: 'Notes', icon: 'fa-sticky-note', x: 20, y: 120 },
+            { id: 'file-manager', name: 'Files', icon: 'fa-folder-open', x: 20, y: 220 },
+            { id: 'games', name: 'Arcade', icon: 'fa-gamepad', x: 20, y: 320 }
+        ];
+
+        const savedIcons = Storage.load('desktop-icons') || defaultIcons;
+
+        savedIcons.forEach(icon => {
+            const el = document.createElement('div');
+            el.className = 'desktop-icon';
+            el.id = `icon-${icon.id}`;
+            el.style.left = icon.x + 'px';
+            el.style.top = icon.y + 'px';
+            el.innerHTML = `
+                <i class="fas ${icon.icon}"></i>
+                <span>${icon.name}</span>
+            `;
+            el.ondblclick = () => this.openApp(icon.id);
+            el.onclick = (e) => {
+                e.stopPropagation();
+                workspace.querySelectorAll('.desktop-icon').forEach(i => i.classList.remove('selected'));
+                el.classList.add('selected');
+            };
+            workspace.appendChild(el);
+            this.setupIconDragging(el, icon.id);
+        });
     },
 
     populateDashboard() {
@@ -309,7 +433,12 @@ const Hub = {
     minimizeWindow(windowId) {
         const win = this.windows.find(w => w.id === windowId);
         if (win) {
-            win.el.style.display = 'none';
+            win.el.classList.add('minimized');
+            setTimeout(() => {
+                if (win.el.classList.contains('minimized')) {
+                    win.el.style.display = 'none';
+                }
+            }, 300);
         }
     },
 
@@ -344,8 +473,11 @@ const Hub = {
         item.id = `taskbar-${winObj.id}`;
         item.textContent = this.getAppName(winObj.appId);
         item.onclick = () => {
-            if (winObj.el.style.display === 'none') {
+            if (winObj.el.classList.contains('minimized')) {
                 winObj.el.style.display = 'flex';
+                setTimeout(() => {
+                    winObj.el.classList.remove('minimized');
+                }, 10);
                 this.focusWindow(winObj.el);
             } else if (this.activeWindow === winObj.el) {
                 this.minimizeWindow(winObj.id);
@@ -457,6 +589,14 @@ const Hub = {
                 return WeatherApp.init(containerId);
             case 'news':
                 return NewsApp.init(containerId);
+            case 'terminal':
+                return TerminalApp.init(containerId);
+            case 'assistant':
+                return AssistantApp.init(containerId);
+            case 'mixer':
+                return MixerApp.init(containerId);
+            case 'taskman':
+                return TaskmanApp.init(containerId);
             case 'games':
                 return GamesApp.init(containerId);
             case 'settings':
@@ -487,6 +627,8 @@ const Hub = {
                         <div class="wp-preset" style="background: linear-gradient(45deg, #8e44ad, #3498db)" onclick="Hub.setWallpaper('linear-gradient(45deg, #8e44ad, #3498db)')"></div>
                         <div class="wp-preset" style="background: linear-gradient(45deg, #16a085, #f1c40f)" onclick="Hub.setWallpaper('linear-gradient(45deg, #16a085, #f1c40f)')"></div>
                         <div class="wp-preset" style="background: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=100&q=60'); background-size: cover;" onclick="Hub.setWallpaper('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1350&q=80')"></div>
+                        <div class="wp-preset" style="background: #000; color: #0f0; display:flex; align-items:center; justify-content:center; font-size:10px;" onclick="Hub.setWallpaper('matrix')">MTX</div>
+                        <div class="wp-preset" style="background: #333; color: #fff; display:flex; align-items:center; justify-content:center; font-size:10px;" onclick="Hub.setWallpaper('particles')">PRT</div>
                     </div>
 
                     <div style="margin-top: 15px; display: flex; gap: 20px; align-items: center;">
@@ -502,10 +644,14 @@ const Hub = {
                 </section>
 
                 <section style="margin-top: 20px;">
-                    <h3>Security</h3>
+                    <h3>Security & Startup</h3>
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <input type="checkbox" id="lock-toggle" ${lockEnabled ? 'checked' : ''} onchange="Hub.toggleLock(this.checked)">
                         <label for="lock-toggle">Enable Lock Screen (PIN: 1234)</label>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <p>Startup Apps (Comma separated IDs)</p>
+                        <input type="text" id="startup-apps-input" value="${(Storage.load('startup-apps') || []).join(', ')}" placeholder="e.g. todo, sysmon" onchange="Hub.updateStartupApps(this.value)">
                     </div>
                 </section>
 
@@ -602,6 +748,12 @@ const Hub = {
             Storage.save('lock-passcode', '1234');
         }
         Utils.showToast(enabled ? 'Lock Screen Enabled' : 'Lock Screen Disabled', 'info');
+    },
+
+    updateStartupApps(val) {
+        const apps = val.split(',').map(s => s.trim()).filter(s => s);
+        Storage.save('startup-apps', apps);
+        Utils.showToast('Startup apps updated', 'success');
     },
 
     handleContextMenu(e) {
@@ -728,6 +880,51 @@ const Hub = {
         } else if (side === 'right') {
             winEl.style.left = '50%';
         }
+    },
+
+    setupIconDragging(el, appId) {
+        el.onmousedown = (e) => {
+            if (e.button !== 0) return;
+            e.preventDefault();
+
+            let pos1 = 0, pos2 = 0, pos3 = e.clientX, pos4 = e.clientY;
+            let moved = false;
+
+            document.onmousemove = (e) => {
+                e.preventDefault();
+                moved = true;
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+
+                el.style.top = (el.offsetTop - pos2) + "px";
+                el.style.left = (el.offsetLeft - pos1) + "px";
+            };
+
+            document.onmouseup = () => {
+                document.onmousemove = null;
+                document.onmouseup = null;
+
+                if (moved) {
+                    this.saveIconPositions();
+                }
+            };
+        };
+    },
+
+    saveIconPositions() {
+        const icons = [];
+        document.querySelectorAll('.desktop-icon').forEach(el => {
+            icons.push({
+                id: el.id.replace('icon-', ''),
+                name: el.querySelector('span').textContent,
+                icon: el.querySelector('i').className.replace('fas ', ''),
+                x: el.offsetLeft,
+                y: el.offsetTop
+            });
+        });
+        Storage.save('desktop-icons', icons);
     },
 
     setupWindowInteractions(winEl) {
