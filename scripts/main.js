@@ -291,6 +291,80 @@ const Hub = {
         }
     },
 
+    // v6 Inter-App Communication (IAC)
+    messageHandlers: {},
+    postMessage(targetAppId, data, senderAppId) {
+        console.log(`[IAC] Message from ${senderAppId} to ${targetAppId}`, data);
+        if (this.messageHandlers[targetAppId]) {
+            this.messageHandlers[targetAppId].forEach(handler => handler(data, senderAppId));
+        }
+    },
+    onMessage(appId, callback) {
+        if (!this.messageHandlers[appId]) this.messageHandlers[appId] = [];
+        this.messageHandlers[appId].push(callback);
+        return () => {
+            this.messageHandlers[appId] = this.messageHandlers[appId].filter(h => h !== callback);
+        };
+    },
+
+    toggleNotificationCenter() {
+        let center = document.getElementById('notification-center');
+        if (!center) {
+            center = document.createElement('div');
+            center.id = 'notification-center';
+            center.className = 'glass-morphism';
+            document.body.appendChild(center);
+        }
+
+        if (center.classList.contains('show')) {
+            center.classList.remove('show');
+            return;
+        }
+
+        this.renderNotifications();
+        center.classList.add('show');
+    },
+
+    renderNotifications() {
+        const center = document.getElementById('notification-center');
+        if (!center) return;
+
+        const notifs = Utils.notifications;
+        center.innerHTML = `
+            <div class="notif-header">
+                <h3>Notifications</h3>
+                <button onclick="Hub.clearNotifications()">Clear All</button>
+            </div>
+            <div class="notif-list">
+                ${notifs.length === 0 ? '<div class="empty-notif">No new notifications</div>' : notifs.map(n => `
+                    <div class="notif-item ${n.read ? 'read' : ''}" onclick="Hub.markNotifRead('${n.id}')">
+                        <i class="fas ${n.icon} ${n.type}"></i>
+                        <div class="notif-content">
+                            <div class="notif-title">${n.title}</div>
+                            <div class="notif-body">${n.body}</div>
+                            <div class="notif-time">${n.time.toLocaleTimeString()}</div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    },
+
+    clearNotifications() {
+        Utils.notifications = [];
+        Utils.updateNotificationBadge();
+        this.renderNotifications();
+    },
+
+    markNotifRead(id) {
+        const n = Utils.notifications.find(notif => notif.id === id);
+        if (n) {
+            n.read = true;
+            Utils.updateNotificationBadge();
+            this.renderNotifications();
+        }
+    },
+
     async filterApps(query) {
         query = query.toLowerCase();
         const sidebarNav = document.getElementById('sidebar-nav');
@@ -456,7 +530,16 @@ const Hub = {
                 <span class="window-title">${appName}</span>
                 <div class="window-controls">
                     <span class="control-minimize" onclick="Hub.minimizeWindow('${windowId}')"></span>
-                    <span class="control-maximize" onclick="Hub.maximizeWindow('${windowId}')"></span>
+                    <span class="control-maximize" onclick="Hub.maximizeWindow('${windowId}')">
+                        <div class="snap-layouts-menu">
+                            <div class="snap-layout-option split-v" onclick="Hub.snapWindowTo('${windowId}', 'left')"><div></div><div></div></div>
+                            <div class="snap-layout-option split-v" onclick="Hub.snapWindowTo('${windowId}', 'right')"><div></div><div></div></div>
+                            <div class="snap-layout-option split-h" onclick="Hub.snapWindowTo('${windowId}', 'top')"><div></div><div></div></div>
+                            <div class="snap-layout-option split-h" onclick="Hub.snapWindowTo('${windowId}', 'bottom')"><div></div><div></div></div>
+                            <div class="snap-layout-option quad" onclick="Hub.snapWindowTo('${windowId}', 'quad-tl')"><div></div><div></div><div></div><div></div></div>
+                            <div class="snap-layout-option main-aside" onclick="Hub.snapWindowTo('${windowId}', 'main-aside')"><div></div><div></div></div>
+                        </div>
+                    </span>
                     <span class="control-close" onclick="Hub.closeWindow('${windowId}')"></span>
                 </div>
             </div>
@@ -533,7 +616,7 @@ const Hub = {
             'weather': 'weather', 'news': 'news', 'terminal': 'terminal',
             'assistant': 'assistant', 'mixer': 'mixer', 'taskman': 'taskman', 'lockscreen': 'lockscreen',
             'code-editor': 'code-editor', 'app-store': 'app-store', 'photo-studio': 'photo-studio', 'beat-maker': 'beat-maker',
-            'cloud-hub': 'cloud-hub'
+            'cloud-hub': 'cloud-hub', 'studio': 'studio'
         };
         const scriptName = mapping[appId] || appId;
         return `scripts/apps/${scriptName}.js`;
@@ -767,6 +850,8 @@ const Hub = {
                 return BeatMakerApp.init(containerId, params);
             case 'cloud-hub':
                 return CloudHubApp.init(containerId, params);
+            case 'studio':
+                return HubStudioApp.init(containerId, params);
             case 'settings':
                 this.loadSettingsApp(containerId);
                 break;
@@ -850,8 +935,8 @@ const Hub = {
                 </section>
                 <section style="margin-top: 20px;">
                     <h3>About</h3>
-                    <p>Ultimate All-in-One HTML Hub v5.0 (Platinum Edition)</p>
-                    <p>The absolute peak of vanilla web productivity.</p>
+                    <p>Ultimate All-in-One HTML Hub v8.0 (Infinity Edition)</p>
+                    <p>The pinnacle of browser-based desktop environments.</p>
                 </section>
             </div>
             <style>
@@ -1038,28 +1123,46 @@ const Hub = {
 
     snapWindow(winEl, side) {
         const win = this.windows.find(w => w.el === winEl);
+        if (win) this.snapWindowTo(win.id, side);
+    },
+
+    snapWindowTo(windowId, side) {
+        const win = this.windows.find(w => w.id === windowId);
         if (!win) return;
 
+        const winEl = win.el;
         if (side === 'maximize') {
             this.maximizeWindow(win.id);
             return;
         }
 
-        win.oldTop = winEl.style.top;
-        win.oldLeft = winEl.style.left;
-        win.oldWidth = winEl.style.width;
-        win.oldHeight = winEl.style.height;
+        // Save state if not already snapped/maximized
+        if (!winEl.classList.contains('snapped') && !winEl.classList.contains('maximized')) {
+            win.oldTop = winEl.style.top;
+            win.oldLeft = winEl.style.left;
+            win.oldWidth = winEl.style.width;
+            win.oldHeight = winEl.style.height;
+        }
 
         winEl.classList.add('snapped');
-        winEl.style.top = '0';
-        winEl.style.height = '100%';
-        winEl.style.width = '50%';
+        winEl.classList.remove('maximized');
+        winEl.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
 
-        if (side === 'left') {
-            winEl.style.left = '0';
-        } else if (side === 'right') {
-            winEl.style.left = '50%';
+        const layouts = {
+            'left': { top: '0', left: '0', width: '50%', height: '100%' },
+            'right': { top: '0', left: '50%', width: '50%', height: '100%' },
+            'top': { top: '0', left: '0', width: '100%', height: '50%' },
+            'bottom': { top: '50%', left: '0', width: '100%', height: '50%' },
+            'quad-tl': { top: '0', left: '0', width: '50%', height: '50%' },
+            'main-aside': { top: '0', left: '0', width: '70%', height: '100%' }
+        };
+
+        const style = layouts[side];
+        if (style) {
+            Object.assign(winEl.style, style);
         }
+
+        setTimeout(() => winEl.style.transition = '', 300);
     },
 
     setupIconDragging(el, appId) {

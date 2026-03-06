@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hub-v4';
+const CACHE_NAME = 'hub-v8';
 const ASSETS = [
   './',
   './index.html',
@@ -6,6 +6,8 @@ const ASSETS = [
   './styles/app-windows.css',
   './scripts/main.js',
   './scripts/storage.js',
+  './scripts/vfs.js',
+  './scripts/extensions.js',
   './scripts/utils.js'
 ];
 

@@ -84,6 +84,7 @@
                     <ul>
                         <li data-app="app-store"><i class="fas fa-shopping-bag"></i> App Store</li>
                         <li data-app="code-editor"><i class="fas fa-code"></i> Code Editor</li>
+                        <li data-app="studio"><i class="fas fa-laptop-code"></i> Hub Studio</li>
                     </ul>
                 </div>
                 <div class="nav-group">
@@ -137,6 +138,10 @@
                 <button onclick="Hub.switchWorkspace(1)">2</button>
             </div>
             <div id="system-tray">
+                <div id="notification-trigger" onclick="Hub.toggleNotificationCenter()">
+                    <i class="fas fa-bell"></i>
+                    <span id="notif-badge" class="badge"></span>
+                </div>
                 <span id="clock">00:00:00</span>
             </div>
         </footer>
@@ -145,7 +150,7 @@
     <script src="scripts/utils.js"></script>
     <script src="scripts/storage.js"></script>
     <script src="scripts/vfs.js"></script>
-    <script src="scripts/extensions.js"></script>
     <script src="scripts/main.js"></script>
+    <script src="scripts/extensions.js"></script>
 </body>
 </html>
