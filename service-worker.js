@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hub-v1';
+const CACHE_NAME = 'hub-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -22,6 +22,7 @@ const ASSETS = [
   './scripts/apps/goals.js',
   './scripts/apps/habits.js',
   './scripts/apps/hangman.js',
+  './scripts/apps/lockscreen.js',
   './scripts/apps/logodesign.js',
   './scripts/apps/lorem.js',
   './scripts/apps/markdown.js',
@@ -30,10 +31,11 @@ const ASSETS = [
   './scripts/apps/memory.js',
   './scripts/apps/minesweeper.js',
   './scripts/apps/mini-browser.js',
+  './scripts/apps/news.js',
   './scripts/apps/notes.js',
   './scripts/apps/palette.js',
   './scripts/apps/passgen.js',
-  './scripts/apps/photoedit.js',
+  './scripts/apps/photo-edit.js',
   './scripts/apps/pixelart.js',
   './scripts/apps/planner.js',
   './scripts/apps/pomodoro.js',
@@ -43,6 +45,7 @@ const ASSETS = [
   './scripts/apps/rps.js',
   './scripts/apps/sketchpad.js',
   './scripts/apps/soundboard.js',
+  './scripts/apps/sysmon.js',
   './scripts/apps/textutils.js',
   './scripts/apps/timezone.js',
   './scripts/apps/todo.js',
@@ -50,7 +53,8 @@ const ASSETS = [
   './scripts/apps/typography.js',
   './scripts/apps/video-player.js',
   './scripts/apps/vocab.js',
-  './scripts/apps/voicerec.js'
+  './scripts/apps/voicerec.js',
+  './scripts/apps/weather.js'
 ];
 
 self.addEventListener('install', (e) => {

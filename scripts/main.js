@@ -19,7 +19,17 @@ const Hub = {
         this.setupEventListeners();
         this.registerServiceWorker();
         this.populateDashboard();
+        this.applySettings();
+        if (window.LockScreen) LockScreen.init();
         console.log("Hub Initialized");
+    },
+
+    applySettings() {
+        const accent = Storage.load('accent-color');
+        if (accent) document.documentElement.style.setProperty('--accent-color', accent);
+
+        const blur = Storage.load('glass-blur');
+        if (blur) document.documentElement.style.setProperty('--glass-effect', `blur(${blur}px)`);
     },
 
     registerServiceWorker() {
@@ -39,6 +49,21 @@ const Hub = {
             });
         });
 
+        // Collapsible Sidebar Categories
+        document.querySelectorAll('.nav-group h3').forEach(header => {
+            header.addEventListener('click', () => {
+                const group = header.parentElement;
+                group.classList.toggle('collapsed');
+                const icon = header.querySelector('i.collapse-icon');
+                if (icon) {
+                    icon.classList.toggle('fa-chevron-down');
+                    icon.classList.toggle('fa-chevron-right');
+                }
+            });
+            // Add icon to header
+            header.innerHTML = `<i class="fas fa-chevron-down collapse-icon"></i> ` + header.innerHTML;
+        });
+
         // Theme Toggle
         const themeBtn = document.getElementById('theme-toggle');
         themeBtn.addEventListener('click', () => this.toggleTheme());
@@ -56,6 +81,10 @@ const Hub = {
         // Sidebar Search
         const searchInput = document.getElementById('app-search');
         searchInput.addEventListener('input', (e) => this.filterApps(e.target.value));
+
+        // Context Menu
+        window.addEventListener('contextmenu', (e) => this.handleContextMenu(e));
+        window.addEventListener('click', () => this.hideContextMenu());
 
         // Keyboard Shortcuts
         window.addEventListener('keydown', (e) => this.handleKeyboard(e));
@@ -91,16 +120,14 @@ const Hub = {
         if (!container) return;
         container.innerHTML = '';
 
-        const apps = [
-            { id: 'todo', icon: 'fa-check-square', color: '#4caf50' },
-            { id: 'notes', icon: 'fa-sticky-note', color: '#ffeb3b' },
-            { id: 'calendar', icon: 'fa-calendar-alt', color: '#2196f3' },
-            { id: 'games', icon: 'fa-gamepad', color: '#f44336' },
-            { id: 'sketchpad', icon: 'fa-paint-brush', color: '#9c27b0' },
-            { id: 'calculator', icon: 'fa-calculator', color: '#607d8b' }
-        ];
+        let pinnedApps = Storage.load('pinned-apps');
+        if (!pinnedApps) {
+            pinnedApps = ['todo', 'notes', 'calendar', 'games', 'sketchpad', 'calculator'];
+            Storage.save('pinned-apps', pinnedApps);
+        }
 
-        apps.forEach(app => {
+        pinnedApps.forEach(appId => {
+            const app = this.getAppInfo(appId);
             const tile = document.createElement('div');
             tile.className = 'dashboard-tile';
             tile.innerHTML = `
@@ -236,8 +263,17 @@ const Hub = {
     },
 
     getAppName(appId) {
+        const info = this.getAppInfo(appId);
+        return info ? info.name : appId;
+    },
+
+    getAppInfo(appId) {
         const item = document.querySelector(`#sidebar-nav li[data-app="${appId}"]`);
-        return item ? item.textContent.trim() : appId;
+        if (!item) return null;
+        const icon = item.querySelector('i').className;
+        const name = item.textContent.trim();
+        // Extract color or use default
+        return { id: appId, name, icon, color: 'var(--accent-color)' };
     },
 
     focusWindow(winEl) {
@@ -415,6 +451,12 @@ const Hub = {
                 return RPSApp.init(containerId);
             case 'analytics':
                 return AnalyticsApp.init(containerId);
+            case 'sysmon':
+                return SysMonApp.init(containerId);
+            case 'weather':
+                return WeatherApp.init(containerId);
+            case 'news':
+                return NewsApp.init(containerId);
             case 'games':
                 return GamesApp.init(containerId);
             case 'settings':
@@ -427,6 +469,10 @@ const Hub = {
 
     loadSettingsApp(containerId) {
         const container = document.getElementById(containerId);
+        const accent = Storage.load('accent-color') || '#0078d4';
+        const blur = Storage.load('glass-blur') || '10';
+        const lockEnabled = Storage.load('lock-enabled') || false;
+
         container.innerHTML = `
             <div class="settings-app">
                 <section>
@@ -441,6 +487,25 @@ const Hub = {
                         <div class="wp-preset" style="background: linear-gradient(45deg, #8e44ad, #3498db)" onclick="Hub.setWallpaper('linear-gradient(45deg, #8e44ad, #3498db)')"></div>
                         <div class="wp-preset" style="background: linear-gradient(45deg, #16a085, #f1c40f)" onclick="Hub.setWallpaper('linear-gradient(45deg, #16a085, #f1c40f)')"></div>
                         <div class="wp-preset" style="background: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=100&q=60'); background-size: cover;" onclick="Hub.setWallpaper('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1350&q=80')"></div>
+                    </div>
+
+                    <div style="margin-top: 15px; display: flex; gap: 20px; align-items: center;">
+                        <div>
+                            <p>Accent Color</p>
+                            <input type="color" id="accent-picker" value="${accent}" onchange="Hub.changeAccent(this.value)">
+                        </div>
+                        <div>
+                            <p>Glass Blur (px)</p>
+                            <input type="range" min="0" max="30" value="${blur}" oninput="Hub.changeBlur(this.value)">
+                        </div>
+                    </div>
+                </section>
+
+                <section style="margin-top: 20px;">
+                    <h3>Security</h3>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="lock-toggle" ${lockEnabled ? 'checked' : ''} onchange="Hub.toggleLock(this.checked)">
+                        <label for="lock-toggle">Enable Lock Screen (PIN: 1234)</label>
                     </div>
                 </section>
 
@@ -521,6 +586,150 @@ const Hub = {
         }
     },
 
+    changeAccent(color) {
+        document.documentElement.style.setProperty('--accent-color', color);
+        Storage.save('accent-color', color);
+    },
+
+    changeBlur(px) {
+        document.documentElement.style.setProperty('--glass-effect', `blur(${px}px)`);
+        Storage.save('glass-blur', px);
+    },
+
+    toggleLock(enabled) {
+        Storage.save('lock-enabled', enabled);
+        if (enabled && !Storage.load('lock-passcode')) {
+            Storage.save('lock-passcode', '1234');
+        }
+        Utils.showToast(enabled ? 'Lock Screen Enabled' : 'Lock Screen Disabled', 'info');
+    },
+
+    handleContextMenu(e) {
+        e.preventDefault();
+
+        // Don't show if clicking on an input or textarea
+        if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+
+        let menu = document.getElementById('context-menu');
+        if (!menu) {
+            menu = document.createElement('div');
+            menu.id = 'context-menu';
+            document.body.appendChild(menu);
+        }
+
+        const isDesktop = e.target.id === 'workspace' || e.target.id === 'home-dashboard' || e.target.closest('#home-dashboard');
+
+        if (isDesktop) {
+            menu.innerHTML = `
+                <div class="context-menu-item" onclick="Hub.openApp('settings')">
+                    <i class="fas fa-desktop"></i> Personalize
+                </div>
+                <div class="context-menu-item" onclick="Hub.openApp('notes')">
+                    <i class="fas fa-sticky-note"></i> New Note
+                </div>
+                <div class="context-menu-divider"></div>
+                <div class="context-menu-item" onclick="Hub.toggleTheme()">
+                    <i class="fas fa-moon"></i> Toggle Theme
+                </div>
+                <div class="context-menu-item" onclick="location.reload()">
+                    <i class="fas fa-sync"></i> Refresh System
+                </div>
+            `;
+        } else if (e.target.closest('#sidebar-nav li')) {
+            const appId = e.target.closest('li').getAttribute('data-app');
+            const pinned = (Storage.load('pinned-apps') || []).includes(appId);
+            menu.innerHTML = `
+                <div class="context-menu-item" onclick="Hub.openApp('${appId}')">
+                    <i class="fas fa-external-link-alt"></i> Open App
+                </div>
+                <div class="context-menu-item" onclick="Hub.togglePin('${appId}')">
+                    <i class="fas fa-thumbtack"></i> ${pinned ? 'Unpin from Dash' : 'Pin to Dash'}
+                </div>
+            `;
+        } else {
+            // Generic context menu for other areas if needed
+            menu.innerHTML = `
+                <div class="context-menu-item" onclick="Hub.closeAllWindows()">
+                    <i class="fas fa-window-close"></i> Close All Windows
+                </div>
+            `;
+        }
+
+        menu.style.display = 'block';
+        menu.style.left = e.clientX + 'px';
+        menu.style.top = e.clientY + 'px';
+
+        // Adjust position if it goes off screen
+        const rect = menu.getBoundingClientRect();
+        if (rect.right > window.innerWidth) menu.style.left = (window.innerWidth - rect.width - 5) + 'px';
+        if (rect.bottom > window.innerHeight) menu.style.top = (window.innerHeight - rect.height - 5) + 'px';
+    },
+
+    hideContextMenu() {
+        const menu = document.getElementById('context-menu');
+        if (menu) menu.style.display = 'none';
+    },
+
+    closeAllWindows() {
+        [...this.windows].forEach(win => this.closeWindow(win.id));
+    },
+
+    togglePin(appId) {
+        let pinned = Storage.load('pinned-apps') || [];
+        if (pinned.includes(appId)) {
+            pinned = pinned.filter(id => id !== appId);
+            Utils.showToast(`Unpinned ${appId}`, 'info');
+        } else {
+            pinned.push(appId);
+            Utils.showToast(`Pinned ${appId} to Dashboard`, 'success');
+        }
+        Storage.save('pinned-apps', pinned);
+        this.populateDashboard();
+        this.hideContextMenu();
+    },
+
+    showSnapPreview(side) {
+        let preview = document.getElementById('snap-preview');
+        if (!preview) {
+            preview = document.createElement('div');
+            preview.id = 'snap-preview';
+            document.getElementById('workspace').appendChild(preview);
+        }
+        preview.className = `snap-preview-${side}`;
+        preview.style.display = 'block';
+    },
+
+    hideSnapPreview() {
+        const preview = document.getElementById('snap-preview');
+        if (preview) preview.style.display = 'none';
+    },
+
+    snapWindow(winEl, side) {
+        const win = this.windows.find(w => w.el === winEl);
+        if (!win) return;
+
+        if (side === 'maximize') {
+            this.maximizeWindow(win.id);
+            return;
+        }
+
+        win.oldTop = winEl.style.top;
+        win.oldLeft = winEl.style.left;
+        win.oldWidth = winEl.style.width;
+        win.oldHeight = winEl.style.height;
+
+        winEl.classList.add('snapped');
+        winEl.style.top = '0';
+        winEl.style.height = '100%';
+        winEl.style.width = '50%';
+
+        if (side === 'left') {
+            winEl.style.left = '0';
+        } else if (side === 'right') {
+            winEl.style.left = '50%';
+        }
+    },
+
     setupWindowInteractions(winEl) {
         winEl.addEventListener('mousedown', () => this.focusWindow(winEl));
 
@@ -544,27 +753,44 @@ const Hub = {
                 let newTop = winEl.offsetTop - pos2;
                 let newLeft = winEl.offsetLeft - pos1;
 
-                // Edge Snapping (Simple)
-                if (newTop < 10) newTop = 0;
-                if (newLeft < 10) newLeft = 0;
-
                 winEl.style.top = newTop + "px";
                 winEl.style.left = newLeft + "px";
                 winEl.style.transition = 'none';
+
+                // Visual feedback for Aero Snap
+                const workspace = document.getElementById('workspace').getBoundingClientRect();
+                if (e.clientX < 10) {
+                    this.showSnapPreview('left');
+                } else if (e.clientX > window.innerWidth - 10) {
+                    this.showSnapPreview('right');
+                } else if (e.clientY < 10) {
+                    this.showSnapPreview('top');
+                } else {
+                    this.hideSnapPreview();
+                }
             };
 
-            document.onmouseup = () => {
+            document.onmouseup = (e) => {
                 document.onmousemove = null;
                 document.onmouseup = null;
                 winEl.style.transition = '';
+                this.hideSnapPreview();
 
-                // Snapping to screen edges
-                const rect = winEl.getBoundingClientRect();
                 const workspace = document.getElementById('workspace').getBoundingClientRect();
 
-                if (rect.top < 0) winEl.style.top = '0px';
-                if (rect.left < 0) winEl.style.left = '0px';
-                if (rect.right > workspace.right) winEl.style.left = (workspace.width - rect.width) + 'px';
+                if (e.clientX < 20) {
+                    this.snapWindow(winEl, 'left');
+                } else if (e.clientX > window.innerWidth - 20) {
+                    this.snapWindow(winEl, 'right');
+                } else if (e.clientY < 20) {
+                    this.snapWindow(winEl, 'maximize');
+                } else {
+                    // Snapping to screen edges (bounds check)
+                    const rect = winEl.getBoundingClientRect();
+                    if (rect.top < 0) winEl.style.top = '0px';
+                    if (rect.left < 0) winEl.style.left = '0px';
+                    if (rect.right > workspace.right) winEl.style.left = (workspace.width - rect.width) + 'px';
+                }
             };
         };
 

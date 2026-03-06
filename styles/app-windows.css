@@ -75,3 +75,64 @@
     height: 15px;
     cursor: nwse-resize;
 }
+
+/* Context Menu */
+#context-menu {
+    position: fixed;
+    background: var(--window-bg);
+    backdrop-filter: var(--glass-effect);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    min-width: 180px;
+    z-index: 10000;
+    padding: 5px 0;
+    display: none;
+    animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.context-menu-item {
+    padding: 8px 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+
+.context-menu-item:hover {
+    background: rgba(0, 120, 212, 0.15);
+}
+
+.context-menu-item i {
+    width: 16px;
+    text-align: center;
+    color: var(--accent-color);
+}
+
+.context-menu-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 5px 0;
+}
+
+/* Snap Preview */
+#snap-preview {
+    position: absolute;
+    background: rgba(0, 120, 212, 0.2);
+    border: 2px solid var(--accent-color);
+    z-index: 5;
+    pointer-events: none;
+    transition: all 0.2s;
+    display: none;
+}
+
+.snap-preview-left { top: 0; left: 0; width: 50%; height: 100%; }
+.snap-preview-right { top: 0; left: 50%; width: 50%; height: 100%; }
+.snap-preview-top { top: 0; left: 0; width: 100%; height: 100%; }
