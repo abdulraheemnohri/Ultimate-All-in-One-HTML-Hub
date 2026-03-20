@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate All-in-One HTML Hub</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/app-windows.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="light-theme">
+    <div id="desktop">
+        <aside id="sidebar">
+            <div class="sidebar-header">
+                <h2>HTML Hub</h2>
+                <div class="sidebar-search">
+                    <input type="text" id="app-search" placeholder="Search apps...">
+                    <i class="fas fa-search"></i>
+                </div>
+            </div>
+            <nav id="sidebar-nav">
+                <div class="nav-group">
+                    <h3>Productivity</h3>
+                    <ul>
+                        <li data-app="todo"><i class="fas fa-check-square"></i> To-Do List</li>
+                        <li data-app="habits"><i class="fas fa-calendar-check"></i> Habit Tracker</li>
+                        <li data-app="pomodoro"><i class="fas fa-stopwatch"></i> Pomodoro</li>
+                        <li data-app="notes"><i class="fas fa-sticky-note"></i> Notes</li>
+                        <li data-app="calendar"><i class="fas fa-calendar-alt"></i> Calendar</li>
+                        <li data-app="finance"><i class="fas fa-wallet"></i> Finance</li>
+                        <li data-app="checklist"><i class="fas fa-shopping-cart"></i> Shopping List</li>
+                        <li data-app="reading-list"><i class="fas fa-book"></i> Reading List</li>
+                        <li data-app="planner"><i class="fas fa-list-ol"></i> Daily Planner</li>
+                        <li data-app="recipes"><i class="fas fa-utensils"></i> Recipe Organizer</li>
+                        <li data-app="goals"><i class="fas fa-bullseye"></i> Goal Tracker</li>
+                    </ul>
+                </div>
+                <div class="nav-group">
+                    <h3>Creativity</h3>
+                    <ul>
+                        <li data-app="sketchpad"><i class="fas fa-paint-brush"></i> Sketchpad</li>
+                        <li data-app="photo-studio"><i class="fas fa-camera-retro"></i> Photo Studio</li>
+                        <li data-app="beat-maker"><i class="fas fa-drum"></i> Beat Maker</li>
+                        <li data-app="meme-gen"><i class="fas fa-laugh"></i> Meme Maker</li>
+                        <li data-app="palette"><i class="fas fa-palette"></i> Palette Gen</li>
+                        <li data-app="typography"><i class="fas fa-font"></i> Typography</li>
+                        <li data-app="pixelart"><i class="fas fa-th"></i> Pixel Art</li>
+                        <li data-app="logodesign"><i class="fas fa-shapes"></i> Logo Design</li>
+                        <li data-app="photo-edit"><i class="fas fa-image"></i> Photo Editor</li>
+                        <li data-app="collage"><i class="fas fa-th-large"></i> Collage Maker</li>
+                    </ul>
+                </div>
+                <div class="nav-group">
+                    <h3>Kids Education</h3>
+                    <ul>
+                        <li data-app="kids-edu"><i class="fas fa-child"></i> Kids Hub</li>
+                        <li data-app="math"><i class="fas fa-plus-minus"></i> Easy Math</li>
+                        <li data-app="vocab"><i class="fas fa-language"></i> Word Fun</li>
+                    </ul>
+                </div>
+                <div class="nav-group">
+                    <h3>Adult Education</h3>
+                    <ul>
+                        <li data-app="adult-edu"><i class="fas fa-university"></i> Professional Hub</li>
+                        <li data-app="quiz-gen"><i class="fas fa-tasks"></i> Quiz Generator</li>
+                        <li data-app="typing-trainer"><i class="fas fa-keyboard"></i> Type Master</li>
+                        <li data-app="flashcards"><i class="fas fa-clone"></i> Flashcards</li>
+                    </ul>
+                </div>
+                <div class="nav-group">
+                    <h3>Games</h3>
+                    <ul>
+                        <li data-app="games"><i class="fas fa-gamepad"></i> Games Hub</li>
+                        <li data-app="minesweeper"><i class="fas fa-bomb"></i> Minesweeper</li>
+                        <li data-app="hangman"><i class="fas fa-ghost"></i> Hangman</li>
+                        <li data-app="memory"><i class="fas fa-clone"></i> Memory Game</li>
+                        <li data-app="rps"><i class="fas fa-hand-rock"></i> Rock-Paper-Scissors</li>
+                    </ul>
+                </div>
+                <div class="nav-group">
+                    <h3>Media</h3>
+                    <ul>
+                        <li data-app="audio-player"><i class="fas fa-music"></i> Audio</li>
+                        <li data-app="video-player"><i class="fas fa-video"></i> Video</li>
+                        <li data-app="soundboard"><i class="fas fa-volume-up"></i> Soundboard</li>
+                    </ul>
+                </div>
+                <div class="nav-group">
+                    <h3>System</h3>
+                    <ul>
+                        <li data-app="user-manager"><i class="fas fa-user-shield"></i> User Manager</li>
+                        <li data-app="app-store"><i class="fas fa-shopping-bag"></i> App Store</li>
+                        <li data-app="code-editor"><i class="fas fa-code"></i> Code Editor</li>
+                        <li data-app="studio"><i class="fas fa-laptop-code"></i> Hub Studio</li>
+                    </ul>
+                </div>
+                <div class="nav-group">
+                    <h3>Tools</h3>
+                    <ul>
+                        <li data-app="calculator"><i class="fas fa-calculator"></i> Calculator</li>
+                        <li data-app="converter"><i class="fas fa-exchange-alt"></i> Converter</li>
+                        <li data-app="qrcode"><i class="fas fa-qrcode"></i> QR Generator</li>
+                        <li data-app="text-utils"><i class="fas fa-file-alt"></i> Text Tools</li>
+                        <li data-app="pass-gen"><i class="fas fa-key"></i> Pass Gen</li>
+                        <li data-app="timezone"><i class="fas fa-clock"></i> World Clock</li>
+                        <li data-app="lorem"><i class="fas fa-paragraph"></i> Lorem Ipsum</li>
+                        <li data-app="voice-rec"><i class="fas fa-microphone"></i> Voice Rec</li>
+                        <li data-app="mini-browser"><i class="fas fa-globe"></i> Browser</li>
+                        <li data-app="markdown"><i class="fab fa-markdown"></i> MD Editor</li>
+                        <li data-app="file-manager"><i class="fas fa-folder-open"></i> File Manager</li>
+                        <li data-app="analytics"><i class="fas fa-chart-bar"></i> Analytics</li>
+                        <li data-app="sysmon"><i class="fas fa-microchip"></i> System Monitor</li>
+                        <li data-app="weather"><i class="fas fa-cloud-sun"></i> Weather</li>
+                        <li data-app="news"><i class="fas fa-newspaper"></i> News Reader</li>
+                        <li data-app="terminal"><i class="fas fa-terminal"></i> Terminal</li>
+                        <li data-app="assistant"><i class="fas fa-robot"></i> Assistant</li>
+                        <li data-app="mixer"><i class="fas fa-sliders-h"></i> Mixer</li>
+                        <li data-app="taskman"><i class="fas fa-tasks"></i> Task Manager</li>
+                        <li data-app="cloud-hub"><i class="fas fa-cloud"></i> Cloud Hub</li>
+                    </ul>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="theme-toggle"><i class="fas fa-moon"></i></button>
+                <button id="settings-btn"><i class="fas fa-cog"></i></button>
+            </div>
+        </aside>
+
+        <main id="workspace">
+            <div id="desktop-widgets"></div>
+            <!-- App windows will be injected here -->
+            <div id="home-dashboard">
+                <h1>Welcome Back</h1>
+                <div class="quick-access">
+                    <!-- Quick access tiles -->
+                </div>
+            </div>
+        </main>
+
+        <footer id="taskbar">
+            <div id="start-menu-btn"><i class="fab fa-windows"></i></div>
+            <div id="running-apps"></div>
+            <div id="workspace-switcher">
+                <button onclick="Hub.switchWorkspace(0)" class="active">1</button>
+                <button onclick="Hub.switchWorkspace(1)">2</button>
+            </div>
+            <div id="system-tray">
+                <div id="notification-trigger" onclick="Hub.toggleNotificationCenter()">
+                    <i class="fas fa-bell"></i>
+                    <span id="notif-badge" class="badge"></span>
+                </div>
+                <span id="clock">00:00:00</span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="scripts/utils.js"></script>
+    <script src="scripts/storage.js"></script>
+    <script src="scripts/vfs.js"></script>
+    <script src="scripts/main.js"></script>
+    <script src="scripts/extensions.js"></script>
+</body>
+</html>
